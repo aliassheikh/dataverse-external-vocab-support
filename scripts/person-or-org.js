@@ -140,6 +140,7 @@ function expandPersonOrOrgDisplays() {
         var id = element.textContent.trim();
         // Needed to pick up use of sandbox.orcid.org
         var orcidBaseUrl = $(element).attr('data-cvoc-service-url') || "https://orcid.org/";
+        var managedFields = JSON.parse($(element).attr('data-cvoc-managedfields') || "{}");
         // ROR doesn't have a sandbox
         var currentRorBaseUrl = rorBaseUrl;
 
@@ -151,10 +152,10 @@ function expandPersonOrOrgDisplays() {
 
         if (id.match(/^\d{4}-\d{4}-\d{4}-(\d{4}|\d{3}X)$/)) {
             // It's an ORCID
-            expandPerson(element, id, orcidBaseUrl);
+            expandPerson(element, id, orcidBaseUrl, managedFields);
         } else if (id.match(/^0[a-z0-9]{6}[0-9]{2}$/)) {
             // It's a ROR ID
-            expandOrganization(element, id, rorBaseUrl);
+            expandOrganization(element, id, rorBaseUrl, managedFields);
         } else {
             // Plain text
             showAsPlainText(element);
@@ -808,7 +809,7 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
 
 // --- Helper functions for ORCID/Person ---
 
-function expandPerson(element, id, orcidBaseUrl) {
+function expandPerson(element, id, orcidBaseUrl, managedFields) {
     var i18n = window.personOrg.state.i18n;
     var orcidRetrievalUrl = (orcidBaseUrl.includes("sandbox.orcid.org") ? "https://pub.sandbox.orcid.org/" : "https://pub.orcid.org/") + "v3.0/" + id + "/person";
     $.ajax({
@@ -836,7 +837,13 @@ function expandPerson(element, id, orcidBaseUrl) {
                     displayElement.append($('<span/>').text(i18n.unauthenticated).attr('title', i18n.unauthenticatedTooltip));
                 }
                 $(element).hide();
-                let sibs = $(element).siblings("[data-cvoc-index='" + $(element).attr('data-cvoc-index') + "']");
+                let index = $(element).attr('data-cvoc-index');
+                if (managedFields && index !== undefined) {
+                    Object.values(managedFields).forEach(field => {
+                        $(element).siblings("[data-cvoc-metadata-name='" + field + "'][data-cvoc-index='" + index + "']").hide();
+                    });
+                }
+                let sibs = $(element).siblings("[data-cvoc-index='" + index + "']");
                 let target = element;
                 if (sibs.length > 0 && $(sibs.eq(0)).index() < $(element).index()) {
                     target = sibs.eq(0);
@@ -894,7 +901,7 @@ function checkOrcidWorkMatch(orcidId, orcidBaseUrl) {
     );
 }
 
-function expandOrganization(element, id, rorBaseUrl) {
+function expandOrganization(element, id, rorBaseUrl, managedFields) {
     var rorRetrievalUrl = (rorBaseUrl.startsWith("https://sandbox.ror.org") ? "https://api.sandbox.ror.org/organizations/" : "https://api.ror.org/organizations/") + id;
     $.ajax({
         type: "GET",
@@ -928,6 +935,14 @@ function expandOrganization(element, id, rorBaseUrl) {
             if (displayInfo.useParens) {
                 $(element).attr('style', 'margin-left: 0.25em;margin-right: 0.25em;');
             }
+            if (managedFields) {
+                let index = $(element).attr('data-cvoc-index');
+                if (index !== undefined) {
+                    Object.values(managedFields).forEach(field => {
+                        $(element).siblings("[data-cvoc-metadata-name='" + field + "'][data-cvoc-index='" + index + "']").hide();
+                    });
+                }
+            }
         },
         error: function () {
             showAsPlainText(element);
@@ -959,7 +974,11 @@ function showAsPlainText(element) {
     $(element).show();
     let index = $(element).attr('data-cvoc-index');
     if (index !== undefined) {
-        $(element).siblings("[data-cvoc-index='" + index + "']").show().removeClass('hidden').removeAttr('hidden');
+        $(element)
+            .siblings("[data-cvoc-index='" + index + "']")
+            .not("[data-cvoc-metadata-name='datasetContactEmail']")  //Required for Dataverse <6.12
+            .show().removeClass('hidden')
+            .removeAttr('hidden');
     }
 }
 
