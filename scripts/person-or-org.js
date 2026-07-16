@@ -507,6 +507,13 @@ function updatePersonOrOrgInputs() {
                             showMismatchWarning(selectElement, currentValue, displayName, $nameField, 'organization');
                         }
                     }
+
+                    if (managedFields.abbreviation && acronyms.length > 0) {
+                        var $abbrField = $(parent).find("input[data-cvoc-managed-field='" + managedFields.abbreviation + "']");
+                        if (!$abbrField.val()) {
+                            $abbrField.val(acronyms[0]).attr('value', acronyms[0]);
+                        }
+                    }
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                     if (jqXHR.status != 404) {
@@ -676,6 +683,11 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
                     }
                     if (managedEmail) {
                         $(parent).find("input" + selector).val(managedEmail).attr('value', managedEmail).trigger('change');
+                    }
+                } else if (key === 'abbreviation') {
+                    if (isRor && data.acronyms && data.acronyms.length > 0) {
+                        var acronym = data.acronyms[0];
+                        $(parent).find("input" + selector).val(acronym).attr('value', acronym).trigger('change');
                     }
                 } else {
                     $(parent).find(selector).val('').trigger('change').attr('value', '');
@@ -1208,7 +1220,8 @@ function getOrgSelect2Config(inputElement, searchUrl) {
                                 id: x.id.replace(rorBaseUrl, ''),
                                 city: x.city,
                                 country: x.country,
-                                orgType: x.orgType
+                                orgType: x.orgType,
+                                acronyms: x.acronyms
                             };
                         })
                 };
