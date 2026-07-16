@@ -25,7 +25,9 @@ window.personOrg = {
             placeholder: "Select or enter...",
             searching: "Search by name, email, or ORCID…",
             searchingRor: "Search by organization name…",
-            noRorEntry: "No ROR Entry"
+            noRorEntry: "No ROR Entry",
+            noId: "No Identifier",
+            manuallyAddId: "manually add identifier after selecting"
         },
         loadedLang: null,
         i18nPromise: null
@@ -1050,6 +1052,16 @@ function getPersonSelect2Config(inputElement, searchUrl, baseUrl) {
                 return item.text;
             }
 
+            if (item.id === item.text) {
+                var managedFields = JSON.parse($(inputElement).attr('data-cvoc-managedfields') || "{}");
+                var text = item.text + " (" + i18n.noId;
+                if (managedFields.idType) {
+                    text += " - " + i18n.manuallyAddId;
+                }
+                text += ")";
+                return text;
+            }
+
             // markMatch2 bolds the search term if/where it appears in the result
             return markMatch2(item.text, term);
         },
@@ -1187,6 +1199,17 @@ function getOrgSelect2Config(inputElement, searchUrl) {
             if (item.loading) {
                 return item.text;
             }
+
+            if (item.id === item.text) {
+                var managedFields = JSON.parse($(inputElement).attr('data-cvoc-managedfields') || "{}");
+                var text = item.text + " (" + i18n.noId;
+                if (managedFields.idType) {
+                    text += " - " + i18n.manuallyAddId;
+                }
+                text += ")";
+                return text;
+            }
+
             return markMatch2(item.text, term);
         },
         templateSelection: function (item) {

@@ -15,5 +15,7 @@
   "placeholder": "Sélectionner ou saisir...",
   "searching": "Rechercher par nom, e-mail ou ORCID…",
   "searchingRor": "Rechercher par nom d'organisation…",
-  "noRorEntry": "Aucune entrée ROR"
+  "noRorEntry": "Aucune entrée ROR",
+  "noId": "Aucun identifiant",
+  "manuallyAddId": "ajouter l'identifiant manuellement après sélection"
 }

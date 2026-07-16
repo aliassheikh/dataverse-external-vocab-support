@@ -15,5 +15,7 @@
   "placeholder": "Select or enter...",
   "searching": "Search by name, email, or ORCID…",
   "searchingRor": "Search by organization name…",
-  "noRorEntry": "No ROR Entry"
+  "noRorEntry": "No ROR Entry",
+  "noId": "No Identifier",
+  "manuallyAddId": "manually add identifier after selecting"
 }

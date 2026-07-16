@@ -15,5 +15,7 @@
   "placeholder": "Seleccionar o ingresar...",
   "searching": "Buscar por nombre, correo electrónico u ORCID…",
   "searchingRor": "Buscar por nombre de organización…",
-  "noRorEntry": "Sin entrada ROR"
+  "noRorEntry": "Sin entrada ROR",
+  "noId": "Sin identificador",
+  "manuallyAddId": "agregar identificador manualmente después de seleccionar"
 }
