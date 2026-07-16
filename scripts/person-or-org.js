@@ -1063,7 +1063,12 @@ function getPersonSelect2Config(inputElement, searchUrl, baseUrl) {
             }
 
             // markMatch2 bolds the search term if/where it appears in the result
-            return markMatch2(item.text, term);
+            var $result = markMatch2(item.text, term);
+            if (item.affiliations) {
+                var $affil = $('<div style="font-size: 0.85em; color: #777; margin-left: 0px;"></div>').text(item.affiliations);
+                $result = $('<span></span>').append($result).append($affil);
+            }
+            return $result;
         },
         templateSelection: function (item) {
             // For a selection, add HTML to make the ORCID a link
@@ -1113,13 +1118,18 @@ function getPersonSelect2Config(inputElement, searchUrl, baseUrl) {
                         .sort((a, b) => Number(getValue(orcidPrefix, b['orcid-id']).name != null) - Number(getValue(orcidPrefix, a['orcid-id']).name != null))
                         .map(function (x) {
                             var email = (x.email && x.email.length > 0) ? x.email[0] : "";
+                            var affiliations = (x['institution-name'] && x['institution-name'].length > 0)
+                                ? x['institution-name'].join(', ')
+                                : "";
+                            var text = ((x['family-names']) ? x['family-names'] + ", " : "") + x['given-names'] +
+                                "; " +
+                                x['orcid-id'] +
+                                (email ? "; " + email : "");
                             return {
-                                text: ((x['family-names']) ? x['family-names'] + ", " : "") + x['given-names'] +
-                                    "; " +
-                                    x['orcid-id'] +
-                                    (email ? "; " + email : ""),
+                                text: text,
                                 id: x['orcid-id'],
                                 email: email,
+                                affiliations: affiliations,
                                 // Since clicking in the selection re-opens the choice list,
                                 // one has to use a right click/open in new tab/window to view the ORCID page
                                 title: i18n.openOrcidPage
@@ -1175,10 +1185,17 @@ function getOrgSelect2Config(inputElement, searchUrl) {
                                 .filter(n => n.types && n.types.includes("acronym"))
                                 .map(n => n.value);
 
+                            const city = org.locations && org.locations[0] && org.locations[0].geonames_details ? org.locations[0].geonames_details.name : "";
+                            const country = org.locations && org.locations[0] && org.locations[0].geonames_details ? org.locations[0].geonames_details.country_name : "";
+                            const orgType = (org.types && org.types.length > 0) ? org.types[0].charAt(0).toUpperCase() + org.types[0].slice(1) : "";
+
                             return {
                                 ...org,
                                 name: displayName,
-                                acronyms: acronyms
+                                acronyms: acronyms,
+                                city: city,
+                                country: country,
+                                orgType: orgType
                             };
                         })
                         .sort((a, b) => Number(b.acronyms.some(acr => acr === params.term)) -
@@ -1188,7 +1205,10 @@ function getOrgSelect2Config(inputElement, searchUrl) {
                         .map(function (x) {
                             return {
                                 text: x.name + ", " + x.id.replace(rorBaseUrl, '') + ', ' + x.acronyms.join(','),
-                                id: x.id.replace(rorBaseUrl, '')
+                                id: x.id.replace(rorBaseUrl, ''),
+                                city: x.city,
+                                country: x.country,
+                                orgType: x.orgType
                             };
                         })
                 };
@@ -1210,7 +1230,21 @@ function getOrgSelect2Config(inputElement, searchUrl) {
                 return text;
             }
 
-            return markMatch2(item.text, term);
+            var $result = markMatch2(item.text, term);
+            if (item.city || item.country || item.orgType) {
+                var infoParts = [];
+                if (item.city && item.country) {
+                    infoParts.push(item.city + ", " + item.country);
+                } else if (item.city || item.country) {
+                    infoParts.push(item.city || item.country);
+                }
+                if (item.orgType) {
+                    infoParts.push(item.orgType);
+                }
+                var $info = $('<div style="font-size: 0.85em; color: #777; margin-left: 0px;"></div>').text(infoParts.join(' | '));
+                $result = $('<span></span>').append($result).append($info);
+            }
+            return $result;
         },
         templateSelection: function (item) {
             var name = item.text;
