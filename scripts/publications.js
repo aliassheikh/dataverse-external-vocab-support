@@ -1,41 +1,105 @@
-if (typeof globalThis.Cite === 'undefined') {
-    if (typeof require === 'function') {
-        globalThis.Cite = require('citation-js');
-    }
-}
 
 window.publications = window.publications || {};
 window.publications.config = window.publications.config || {
     publicationSelector: "span[data-cvoc-protocol='publication']",
     publicationInputSelector: "input[data-cvoc-protocol='publication']",
-    selectedFormat: 'chicago-author-date'
+    selectedFormat: 'chicago-author-date',
+    citationJsUrl: 'https://cdn.jsdelivr.net/npm/citation-js'
 };
 
 window.publications.state = window.publications.state || {
     orcidBaseUrl: null,
     i18n: null,
     i18nPromise: null,
-    cslStylePromise: null
+    cslStylePromise: null,
+    citationJsPromise: null
 };
 
-$(document).ready(function() {
-    $.getScript("https://cdn.jsdelivr.net/npm/citation-js").done(function() {
-        // Fetch and cache the CSL style file once on load
-        var selectedFormat = window.publications.config.selectedFormat;
-        if(!window.publications.state.cslStylePromise) {
-            window.publications.state.cslStylePromise = fetch('https://raw.githubusercontent.com/citation-style-language/styles/master/' + selectedFormat + '.csl')
-                .then(r => r.text())
-                .then(styleXml => {
-                    globalThis.Cite.plugins.config.get('@csl').templates.add(selectedFormat, styleXml);
+function getCslConfig() {
+    if (!globalThis.Cite ||
+        !globalThis.Cite.plugins ||
+        !globalThis.Cite.plugins.config) {
+        return null;
+    }
+
+    return globalThis.Cite.plugins.config.get('@csl');
+}
+
+function isCitationJsReady() {
+    var cslConfig = getCslConfig();
+    return !!(globalThis.Cite && cslConfig && cslConfig.templates);
+}
+
+function loadCitationJs() {
+    if (isCitationJsReady()) {
+        return Promise.resolve(globalThis.Cite);
+    }
+
+    if (window.publications.state.citationJsPromise) {
+        return window.publications.state.citationJsPromise;
+    }
+
+    window.publications.state.citationJsPromise = new Promise(function(resolve, reject) {
+        $.getScript(window.publications.config.citationJsUrl)
+            .done(function() {
+                if (!isCitationJsReady()) {
+                    reject(new Error("Citation.js loaded, but the CSL template registry is unavailable."));
+                    return;
+                }
+
+                resolve(globalThis.Cite);
+            })
+            .fail(function(jqXHR, textStatus, errorThrown) {
+                reject(new Error("Failed to load Citation.js: " + textStatus + ": " + errorThrown));
+            });
+    });
+
+    return window.publications.state.citationJsPromise;
+}
+
+function loadCslStyle() {
+    if (window.publications.state.cslStylePromise) {
+        return window.publications.state.cslStylePromise;
+    }
+
+    window.publications.state.cslStylePromise = loadCitationJs()
+        .then(function() {
+            var selectedFormat = window.publications.config.selectedFormat;
+
+            return fetch('https://raw.githubusercontent.com/citation-style-language/styles/master/' + selectedFormat + '.csl')
+                .then(function(response) {
+                    if (!response.ok) {
+                        throw new Error("Failed to load CSL style: " + response.status);
+                    }
+
+                    return response.text();
+                })
+                .then(function(styleXml) {
+                    var cslConfig = getCslConfig();
+
+                    if (!cslConfig || !cslConfig.templates) {
+                        throw new Error("Citation.js CSL templates registry is unavailable.");
+                    }
+
+                    cslConfig.templates.add(selectedFormat, styleXml);
                     return styleXml;
                 });
-        }
-        var lang = $('html').attr('lang') || 'en';
-        var scriptSrc = $('script[src*="publications.js"]').attr('src');
-        loadI18n(lang, scriptSrc).then(function() {
-            expandPublications();
-            updatePublicationInputs();
         });
+
+    return window.publications.state.cslStylePromise;
+}
+
+$(document).ready(function() {
+    var lang = $('html').attr('lang') || 'en';
+    var scriptSrc = $('script[src*="publications.js"]').attr('src');
+
+    loadCslStyle().catch(function(error) {
+        console.warn("Citation formatting initialization failed; fallback citations will be used:", error);
+    });
+
+    loadI18n(lang, scriptSrc).then(function() {
+        expandPublications();
+        updatePublicationInputs();
     });
 });
 
@@ -937,7 +1001,7 @@ function formatCitation(workSummary, workDetails, identifierType, identifier) {
 }
 
 function formatCitationText(identifier) {
-    return window.publications.state.cslStylePromise
+    return loadCslStyle()
         .then(() => globalThis.Cite.async(identifier))
         .then(citation => {
             const formatted = citation.format('bibliography', {
