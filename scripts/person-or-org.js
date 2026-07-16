@@ -209,7 +209,12 @@ function updateManagedFieldVisibility(personOrgInput, managedFields, isIdentifie
         ? $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent()
         : $();
 
-    if (isIdentifier) {
+    // We want to hide the manual ID entry fields if:
+    // 1. We have an identifier (isIdentifier is true)
+    // 2. OR the name field is NOT managed (Select2 is the name field, so no separate manual ID entry slot)
+    var shouldHide = isIdentifier || !managedFields.personName;
+
+    if (shouldHide) {
         if (managedFields.personName) {
             $idFieldParent.hide();
         } else {
@@ -219,11 +224,9 @@ function updateManagedFieldVisibility(personOrgInput, managedFields, isIdentifie
             $idTypeParent.hide();
         }
     } else {
-        if (managedFields.personName) {
-            $idFieldParent.show();
-        } else {
-            $idField.show();
-        }
+        // Manual mode: show ID field (and its parent) and type field
+        // At this point we know managedFields.personName is truthy because of shouldHide logic
+        $idFieldParent.show();
         if ($idTypeParent.length) {
             $idTypeParent.show();
         }
@@ -542,8 +545,7 @@ function updatePersonOrOrgInputs() {
                     if (Object.keys(managedFields).length > 0) {
                         //Handle managed fields
                         if (existingValue.length > 0) {
-                            $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent().show();
-                            $(personOrgInput).parent().show();
+                            updateManagedFieldVisibility(personOrgInput, managedFields, false);
                         }
                         if (managedFields.personName) {
                             existingValue = ($(parent).find("input[data-cvoc-managed-field='" + managedFields.personName + "']").val() || '').trim();
@@ -561,8 +563,7 @@ function updatePersonOrOrgInputs() {
                     if (Object.keys(managedFields).length > 0) {
                         //Handle managed fields
                         if (existingValue.length > 0) {
-                            $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent().show();
-                            $(personOrgInput).parent().show();
+                            updateManagedFieldVisibility(personOrgInput, managedFields, false);
                         }
                         if (managedFields.personName) {
                             existingValue = ($(parent).find("input[data-cvoc-managed-field='" + managedFields.personName + "']").val() || '').trim();
@@ -579,8 +580,7 @@ function updatePersonOrOrgInputs() {
                     if (Object.keys(managedFields).length > 0) {
                         //Handle managed fields
                         if (existingValue.length > 0) {
-                            $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent().show();
-                            $(personOrgInput).parent().show();
+                            updateManagedFieldVisibility(personOrgInput, managedFields, false);
                         }
                         if (managedFields.personName) {
                             existingValue = ($(parent).find("input[data-cvoc-managed-field='" + managedFields.personName + "']").val() || '').trim();
@@ -612,8 +612,8 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
         $this.data('selection-made', false);
         // Capture current selection for revert on Esc
         var data = $this.select2('data');
-        if (data && data.length > 0) {
-            $this.data('revert-val', {id: data[0].id, text: data[0].text, type: type});
+                if (data && data.length > 0) {
+            $this.data('revert-val', {id: data[0].id, text: data[0].text, type: type, acronyms: data[0].acronyms});
         }
     }).on('select2:select.personOrg', function (e) {
         $(this).data('selection-made', true);
@@ -685,7 +685,7 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
                         $(parent).find("input" + selector).val(managedEmail).attr('value', managedEmail).trigger('change');
                     }
                 } else if (key === 'abbreviation') {
-                    if (isRor && data.acronyms && data.acronyms.length > 0) {
+                    if (data.acronyms && data.acronyms.length > 0) {
                         var acronym = data.acronyms[0];
                         $(parent).find("input" + selector).val(acronym).attr('value', acronym).trigger('change');
                     }
@@ -694,8 +694,7 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
                 }
             }
 
-            var shouldHideIdentifierField = !hasPlainText || !managedFields.personName;
-            updateManagedFieldVisibility(personOrgInput, managedFields, shouldHideIdentifierField);
+            updateManagedFieldVisibility(personOrgInput, managedFields, !hasPlainText);
         }
     }).on('select2:unselect.personOrg select2:clear.personOrg', function (e) {
         var $this = $(this);
@@ -703,7 +702,7 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
         if (!$this.data('revert-val')) {
             var data = $this.select2('data');
             if (data && data.length > 0) {
-                $this.data('revert-val', {id: data[0].id, text: data[0].text, type: type});
+                $this.data('revert-val', {id: data[0].id, text: data[0].text, type: type, acronyms: data[0].acronyms});
             }
         }
         $this.parent().find(".mismatch-warning").remove();
@@ -790,7 +789,8 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
                 params: {
                     data: {
                         id: revert.id,
-                        text: revert.text
+                        text: revert.text,
+                        acronyms: revert.acronyms
                     }
                 }
             });
@@ -934,8 +934,8 @@ function expandOrganization(element, id, rorBaseUrl, managedFields) {
                 .filter(n => n.types && n.types.includes("acronym"))
                 .map(n => n.value);
 
-            var city = org.locations[0].geonames_details.name;
-            var country = org.locations[0].geonames_details.country_name;
+            var city = org.locations && org.locations[0] && org.locations[0].geonames_details ? org.locations[0].geonames_details.name : "";
+            var country = org.locations && org.locations[0] && org.locations[0].geonames_details ? org.locations[0].geonames_details.country_name : "";
             var displayInfo = getRorDisplayContext(element);
             $(element).html(getRorDisplayHtml(
                 displayName,
@@ -1133,6 +1133,7 @@ function getPersonSelect2Config(inputElement, searchUrl, baseUrl) {
                             var affiliations = (x['institution-name'] && x['institution-name'].length > 0)
                                 ? x['institution-name'].join(', ')
                                 : "";
+                            var acronyms = [];
                             var text = ((x['family-names']) ? x['family-names'] + ", " : "") + x['given-names'] +
                                 "; " +
                                 x['orcid-id'] +
@@ -1142,6 +1143,7 @@ function getPersonSelect2Config(inputElement, searchUrl, baseUrl) {
                                 id: x['orcid-id'],
                                 email: email,
                                 affiliations: affiliations,
+                                acronyms: acronyms,
                                 // Since clicking in the selection re-opens the choice list,
                                 // one has to use a right click/open in new tab/window to view the ORCID page
                                 title: i18n.openOrcidPage
@@ -1216,7 +1218,7 @@ function getOrgSelect2Config(inputElement, searchUrl) {
                             Number(getValue(rorPrefix, a['id'].replace(rorBaseUrl, '')).name != null))
                         .map(function (x) {
                             return {
-                                text: x.name + ", " + x.id.replace(rorBaseUrl, '') + ', ' + x.acronyms.join(','),
+                                text: x.name + " | " + x.id.replace(rorBaseUrl, '') + ' | ' + x.acronyms.join(','),
                                 id: x.id.replace(rorBaseUrl, ''),
                                 city: x.city,
                                 country: x.country,
@@ -1261,14 +1263,14 @@ function getOrgSelect2Config(inputElement, searchUrl) {
         },
         templateSelection: function (item) {
             var name = item.text;
-            var pos = item.text.search(/, [a-z0-9]{9}/);
+            var pos = item.text.search(/ \| [a-z0-9]{9}/);
             if (pos >= 0) {
                 name = name.slice(0, pos);
-                var idnum = item.text.slice(pos + 2);
+                var idnum = item.text.slice(pos + 3);
                 var altNames = [];
-                pos = idnum.indexOf(', ');
+                pos = idnum.indexOf(' | ');
                 if (pos > 0) {
-                    altNames = idnum.slice(pos + 2).split(',');
+                    altNames = idnum.slice(pos + 3).split(',');
                     idnum = idnum.slice(0, pos);
                 }
                 return getRorDisplayHtml(name, rorBaseUrl + idnum, altNames);
