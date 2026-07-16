@@ -35,6 +35,7 @@ window.personOrg = {
 };
 
 $(document).ready(function () {
+    injectStyles();
     var lang = $('html').attr('lang') || 'en';
     var scriptSrc = Array.from(document.scripts)
         .map(s => s.src)
@@ -45,6 +46,28 @@ $(document).ready(function () {
         updatePersonOrOrgInputs();
     });
 });
+
+/**
+ * Injects CSS styles for the person-or-org script.
+ */
+function injectStyles() {
+    if ($('#cvoc-person-org-styles').length === 0) {
+        $('<style id="cvoc-person-org-styles">')
+            .prop('type', 'text/css')
+            .html(`
+                .cvoc-extra-info {
+                    font-size: 0.85em;
+                    color: #666;
+                    margin-left: 0px;
+                }
+                .select2-results__option--highlighted .cvoc-extra-info,
+                .select2-highlighted .cvoc-extra-info {
+                    color: #fff;
+                }
+            `)
+            .appendTo('head');
+    }
+}
 
 /**
  * Asynchronously loads the internationalization properties for the current locale.
@@ -1077,7 +1100,7 @@ function getPersonSelect2Config(inputElement, searchUrl, baseUrl) {
             // markMatch2 bolds the search term if/where it appears in the result
             var $result = markMatch2(item.text, term);
             if (item.affiliations) {
-                var $affil = $('<div style="font-size: 0.85em; color: #777; margin-left: 0px;"></div>').text(item.affiliations);
+                var $affil = $('<div class="cvoc-extra-info"></div>').text(item.affiliations);
                 $result = $('<span></span>').append($result).append($affil);
             }
             return $result;
@@ -1256,7 +1279,7 @@ function getOrgSelect2Config(inputElement, searchUrl) {
                 if (item.orgType) {
                     infoParts.push(item.orgType);
                 }
-                var $info = $('<div style="font-size: 0.85em; color: #777; margin-left: 0px;"></div>').text(infoParts.join(' | '));
+                var $info = $('<div class="cvoc-extra-info"></div>').text(infoParts.join(' | '));
                 $result = $('<span></span>').append($result).append($info);
             }
             return $result;
