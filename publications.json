@@ -3,7 +3,6 @@
     "field-name": "publication",
     "term-uri-field": "publicationIDNumber",
     "js-url": [
-      "https://cdn.jsdelivr.net/npm/citation-js",
       "http://ec2-3-238-245-253.compute-1.amazonaws.com/cvoc/js/publications.js",
       "https://gdcc.github.io/dataverse-external-vocab-support/scripts/cvocutils.js"
     ],
