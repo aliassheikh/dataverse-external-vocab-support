@@ -231,18 +231,29 @@ async function linkWeb() {
     if (fs.existsSync(configFile)) {
         try {
             const config = JSON.parse(fs.readFileSync(configFile, 'utf8'));
-            const firstItem = config.find(item => item['js-url']);
+            const configArray = Array.isArray(config) ? config : [config];
+            const firstItem = configArray.find(item => item['js-url']);
             if (firstItem) {
                 let jsUrl = Array.isArray(firstItem['js-url']) ? firstItem['js-url'][0] : firstItem['js-url'];
-                if (jsUrl && jsUrl.includes('/js/')) {
-                    const baseUrl = jsUrl.substring(0, jsUrl.lastIndexOf('/js/'));
+                if (jsUrl) {
                     console.log(`\nBased on ${configFile}, your scripts are configured to be at: ${jsUrl}`);
-                    console.log(`You should link the dist/ directory to the local directory corresponding to the web path: ${baseUrl}`);
+                    if (jsUrl.includes('/js/')) {
+                        const baseUrl = jsUrl.substring(0, jsUrl.lastIndexOf('/js/'));
+                        console.log(`You should link the dist/ directory to the local directory corresponding to the web path: ${baseUrl}`);
+                    } else {
+                        console.log('Note: Could not automatically determine the base directory from this URL.');
+                    }
+                } else {
+                    console.log(`\nNo valid 'js-url' found in ${configFile}.`);
                 }
+            } else {
+                console.log(`\nNo 'js-url' found in ${configFile}.`);
             }
         } catch (e) {
-            // Ignore parsing errors
+            console.error(`\nError parsing ${configFile}: ${e.message}`);
         }
+    } else {
+        console.log(`\nFile ${configFile} not found. Skipping URL detection.`);
     }
 
     console.log('\nIt is recommended to link the entire dist/ directory so that both scripts and images are available.');

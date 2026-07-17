@@ -198,16 +198,27 @@ def link_web():
         try:
             with open(config_file, 'r', encoding='utf-8') as f:
                 config = json.load(f)
-                for item in config:
+                config_list = config if isinstance(config, list) else [config]
+                
+                found = False
+                for item in config_list:
                     if 'js-url' in item:
                         js_url = item['js-url'][0] if isinstance(item['js-url'], list) else item['js-url']
-                        if js_url and '/js/' in js_url:
-                            base_url = js_url[:js_url.rfind('/js/')]
+                        if js_url:
                             print(f"\nBased on {config_file}, your scripts are configured to be at: {js_url}")
-                            print(f"You should link the dist/ directory to the local directory corresponding to the web path: {base_url}")
+                            if '/js/' in js_url:
+                                base_url = js_url[:js_url.rfind('/js/')]
+                                print(f"You should link the dist/ directory to the local directory corresponding to the web path: {base_url}")
+                            else:
+                                print("Note: Could not automatically determine the base directory from this URL.")
+                            found = True
                             break
-        except Exception:
-            pass
+                if not found:
+                    print(f"\nNo 'js-url' found in {config_file}.")
+        except Exception as e:
+            print(f"\nError parsing {config_file}: {e}")
+    else:
+        print(f"\nFile {config_file} not found. Skipping URL detection.")
 
     print('\nIt is recommended to link the entire dist/ directory so that both scripts and images are available.')
     
