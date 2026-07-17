@@ -183,9 +183,9 @@ async function compose() {
 }
 
 /**
- * Interactive publish command.
+ * Interactive updateDataverse command.
  */
-async function publish() {
+async function updateDataverse() {
     const configFile = await question(`Configuration file to upload (default: ${DEFAULT_OUTPUT}): `) || DEFAULT_OUTPUT;
     
     if (!fs.existsSync(configFile)) {
@@ -194,20 +194,27 @@ async function publish() {
     }
 
     const dvUrl = await question('Dataverse URL (e.g., http://localhost:8080): ');
-    const apiKey = await question('API Key: ');
+    const unblockKey = await question('Unblock Key (optional, if required by your Dataverse): ');
 
-    const endpoint = `${dvUrl.replace(/\/$/, '')}/api/admin/settings/:CVocConf`;
+    let endpoint = `${dvUrl.replace(/\/$/, '')}/api/admin/settings/:CVocConf`;
+    if (unblockKey) {
+        endpoint += `?unblock-key=${unblockKey}`;
+    }
 
-    console.log(`Uploading ${configFile} to ${endpoint}...`);
+    console.log(`Uploading ${configFile} to ${endpoint.replace(unblockKey, '********')}...`);
 
     try {
         // Using curl via execSync for simplicity as requested in requirements
-        const command = `curl -X PUT --upload-file "${configFile}" -H "X-Dataverse-key: ${apiKey}" "${endpoint}"`;
+        const command = `curl -X PUT --upload-file "${configFile}" "${endpoint}"`;
         const result = execSync(command, { encoding: 'utf8' });
         console.log('\nResponse from Dataverse:');
         console.log(result);
+        console.log('\nSuccess: The :CVocConf setting has been updated and scripts that have been linked and composed with this script should now be active.');
+        console.log('Note: Individual scripts may also require specific metadata blocks or other configuration and users should review the instructions for the scripts they use.');
     } catch (err) {
         console.error(`\nFailed to upload: ${err.message}`);
+        const maskedCommand = `curl -X PUT --upload-file "${configFile}" "${endpoint.replace(unblockKey, '********')}"`;
+        console.log(`Attempted command: ${maskedCommand}`);
         if (err.stdout) console.log(err.stdout);
         if (err.stderr) console.error(err.stderr);
     }
@@ -226,8 +233,8 @@ async function main() {
             await compose();
             rl.close();
             break;
-        case 'publish':
-            await publish();
+        case 'updateDataverse':
+            await updateDataverse();
             rl.close();
             break;
         case 'help':
@@ -236,7 +243,7 @@ async function main() {
             console.log('Commands:');
             console.log('  link     Populate dist/ directory with symlinks to services');
             console.log('  compose  Interactively select and combine configurations');
-            console.log('  publish  Upload a configuration to Dataverse API');
+            console.log('  updateDataverse  Upload a configuration to Dataverse API');
             rl.close();
             break;
     }

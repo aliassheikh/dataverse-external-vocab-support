@@ -34,10 +34,9 @@ Display can also be graphical, as in displaying [Local Contexts](https://localco
 
 This repository is organized into **services**, where each service (e.g., `person-or-org`, `publications`, `geonames`) contains its own scripts, configurations, and documentation.
 
-- `services/`: Contains the logic and configuration for each vocabulary/PID service.
-- `dist/`: A centralized directory for web server access, containing symlinks to all production-ready scripts and internationalization files.
+- `services/`: Contains the logic and configuration for each vocabulary/PID service, along with service-specific examples and documentation.
+- `dist/`: A centralized directory for web server access, containing symlinks to all production-ready scripts, internationalization files, and images.
 - `scripts/`: Deployment and configuration management tools.
-- `examples/`: Additional documentation and examples for specific use cases.
 
 It also contains a [JSON Schema that can be used to validate configuration files](services/person-or-org/configs/CVocConf.schema.json).
 
@@ -80,18 +79,22 @@ node scripts/deploy.js compose
 python scripts/deploy.py compose
 ```
 
-### 3. Publish to Dataverse
+### 3. Update Dataverse Settings
 Upload the generated `CVocConf.json` directly to your Dataverse instance.
 
 **Using Node.js:**
 ```bash
-node scripts/deploy.js publish
+node scripts/deploy.js updateDataverse
 ```
 
 **Using Python:**
 ```bash
-python scripts/deploy.py publish
+python scripts/deploy.py updateDataverse
 ```
+
+The script will prompt for your Dataverse URL and an optional unblock key if your API is restricted. Upon success, your new configuration will be active.
+
+Note: Individual scripts may also require specific metadata blocks or other configuration. Please review the instructions for each service you use.
 
 ---
 
@@ -99,7 +102,7 @@ python scripts/deploy.py publish
 
 The basic idea of the Dataverse External Vocabulary mechanism is to simplify adding and displaying controlled terms and PIDs as metadata. As far as Dataverse is concerned, all that is happening is that a term or PID URI is being entered into a text field and Dataverse then stores and displays the term/PID URI. The interesting part is that a JavaScript is taking over Dataverse's text input and text display to instead provide support such as a type-ahead lookup from a vocabulary/PID service and, on the diplay side, displaying the human-readable name of associated with the term/PID, and potentially additional metadata about the term/PID, rather than the raw URI.
 
-The scripts know which fields to manage based on some invisible data-cvoc-* attributes Dataverse adds to the page's HTML. Dataverse has a flexible configuration mechanism to allow admins to specify which fields should be associated with which scripts, but, in other repositories, these associations could be static. For example, [this simple static example page](examples/staticOrcidAndRorExample.html) shows the ORCID and ROR scripts associated with two input and two display fields. You can look at the page source to see the additional attributes in the HTML that make this work.
+The scripts know which fields to manage based on some invisible data-cvoc-* attributes Dataverse adds to the page's HTML. Dataverse has a flexible configuration mechanism to allow admins to specify which fields should be associated with which scripts, but, in other repositories, these associations could be static. For example, [this simple static example page](services/person-or-org/examples/staticOrcidAndRorExample.html) shows the ORCID and ROR scripts associated with two input and two display fields. You can look at the page source to see the additional attributes in the HTML that make this work.
 
 There's more of course. When a repository already has separate subfields for names and identifiers, scripts can be written to fill in both. If the underlying vocabulary/PID service supports multiple vocabularies, or has an advanced search mechanism, the scipts can be written to let you select which vocabulary to use or provide an advanced search interface. If there's a field where you want to be able to handle free text as well as controlled terms/PIDs, scripts can support that as well. Dataverse also includes a mechanism to allow metadata about the terms/PIDs to be captured, making it possible to provide internationalization for search (i.e. allowing search in your language for a term), include organization acronyms in exported metadata formats, etc. Fortunately, most of this complexity is handled by script/config example developers and Dataverse admins just need to select which ones to install.
 
@@ -107,9 +110,3 @@ For further details, see [James D. Myers, & Vyacheslav Tykhonov. (2023). A Plug-
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8133723.svg)](https://doi.org/10.5281/zenodo.8133723)
 
 
-### Packages
-
-The directory `packages` include complete working sets of metadatablock.tsv / cvoc config and / js files.
-
-- local_contexts
-Is pulling and displaying project-data from https://localcontextshub.org/

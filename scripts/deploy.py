@@ -153,7 +153,7 @@ def compose():
 
     print(f"\nConfiguration saved to {output_file}")
 
-def publish():
+def update_dataverse():
     config_file = input(f"Configuration file to upload (default: {DEFAULT_OUTPUT}): ") or DEFAULT_OUTPUT
     
     if not os.path.exists(config_file):
@@ -161,21 +161,33 @@ def publish():
         return
 
     dv_url = input('Dataverse URL (e.g., http://localhost:8080): ')
-    api_key = input('API Key: ')
+    unblock_key = input('Unblock Key (optional, if required by your Dataverse): ')
 
-    endpoint = f"{dv_url.rstrip('/')}/api/admin/settings/:CVocConf"
+    endpoint = dv_url.rstrip('/') + '/api/admin/settings/:CVocConf'
+    if unblock_key:
+        endpoint += f"?unblock-key={unblock_key}"
 
-    print(f"Uploading {config_file} to {endpoint}...")
+    masked_endpoint = endpoint.replace(unblock_key, '********') if unblock_key else endpoint
+    print(f"Uploading {config_file} to {masked_endpoint}...")
 
     try:
-        command = ['curl', '-X', 'PUT', '--upload-file', config_file, '-H', f"X-Dataverse-key: {api_key}", endpoint]
+        command = ['curl', '-X', 'PUT', '--upload-file', config_file, endpoint]
         result = subprocess.run(command, capture_output=True, text=True)
         print('\nResponse from Dataverse:')
         print(result.stdout)
-        if result.stderr:
-            print(result.stderr)
+        if result.returncode == 0:
+            print('\nSuccess: The :CVocConf setting has been updated and scripts that have been linked and composed with this script should now be active.')
+            print('Note: Individual scripts may also require specific metadata blocks or other configuration and users should review the instructions for the scripts they use.')
+        else:
+            print(f"\nFailed to upload. Exit code: {result.returncode}")
+            masked_command = f"curl -X PUT --upload-file \"{config_file}\" \"{masked_endpoint}\""
+            print(f"Attempted command: {masked_command}")
+            if result.stderr:
+                print(result.stderr)
     except Exception as e:
         print(f"\nFailed to upload: {e}")
+        masked_command = f"curl -X PUT --upload-file \"{config_file}\" \"{masked_endpoint}\""
+        print(f"Attempted command: {masked_command}")
 
 def main():
     if len(sys.argv) < 2:
@@ -187,14 +199,14 @@ def main():
         link_services()
     elif command == 'compose':
         compose()
-    elif command == 'publish':
-        publish()
+    elif command == 'updateDataverse':
+        update_dataverse()
     else:
         print('Usage: python scripts/deploy.py [command]')
         print('Commands:')
         print('  link     Populate dist/ directory with symlinks to services')
         print('  compose  Interactively select and combine configurations')
-        print('  publish  Upload a configuration to Dataverse API')
+        print('  updateDataverse  Upload a configuration to Dataverse API')
 
 if __name__ == "__main__":
     main()

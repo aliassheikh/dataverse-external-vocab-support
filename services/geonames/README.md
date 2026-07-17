@@ -8,10 +8,10 @@ You can get a GeoNames API key for free; just go to [https://www.geonames.org/lo
 
 This example requires several files:
 
-- examples/config/geonames.json : the configuration file that needs to be uploaded in the :CVocConf setting
+- services/geonames/configs/geonames.json : the configuration file that needs to be uploaded in the :CVocConf setting
 
-- scripts/geonames.js : the Javascript file that provides Geonames support
-- scripts/cvocutil.js : a Javascript file with common methods used by both scripts
+- services/geonames/geonames.js : the Javascript file that provides Geonames support
+- services/utils/cvocutils.js : common utilities used across services
 
 (These scripts also use jquery and select2 which are already included in Dataverse).
 

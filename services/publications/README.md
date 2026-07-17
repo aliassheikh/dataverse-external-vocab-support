@@ -17,20 +17,26 @@ The script uses the `publication` protocol and is intended for Dataverse install
 
 This example requires several files:
 
-- `scripts/i18n/publications_*.json` : translation of the script's messages (please contribute transalations to other languages!)
-- `scripts/publications.js` : the JavaScript file that modifies standard Dataverse behavior
-- `scripts/cvocutils.js` : the JavaScript file that modifies standard Dataverse behavior
+- `services/publications/i18n/publications_*.json` : translation of the script's messages (please contribute translations to other languages!)
+- `services/publications/publications.js` : the JavaScript file that provides the functionality
+- `services/utils/cvocutils.js` : common utilities used across services
   
 (These scripts also use jQuery, Select2, and Citation.js, which are already included or loaded by the script.)
 
 ### How to install
 
-- load the `publications.json` file in the `:CVocConf` setting using the [Dataverse API](https://guides.dataverse.org/en/latest/installation/config.html#cvocconf). For example, using curl:
+1. **Production Deployment (Recommended):** Use the interactive deployment tool in the root directory:
+   ```bash
+   node scripts/deploy.js link
+   node scripts/deploy.js compose
+   node scripts/deploy.js updateDataverse
+   ```
+   (Or use the Python equivalent `python scripts/deploy.py ...`)
 
-  `curl -X PUT --upload-file publications.json http://localhost:8080/api/admin/settings/:CVocConf`
-- 
-- For production use, use the compose* scripts or manually add this JSON object to the array in your existing `:CVocConf` setting.
-- Refresh your browser page
+2. **Manual Install (Minimal):**
+   - Load the `publications.json` file in the `:CVocConf` setting using the [Dataverse API](https://guides.dataverse.org/en/latest/installation/config.html#cvocconf). For example, using curl from the `services/publications/configs` directory:
+     `curl -X PUT --upload-file publications.json http://localhost:8080/api/admin/settings/:CVocConf`
+   - Refresh your browser page.
 
 After that, you should see a **Find using ORCID** button next to the Related Publications citation field, provided that at least one author on the dataset has an ORCID value.
 
