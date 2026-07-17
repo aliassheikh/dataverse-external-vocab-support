@@ -66,20 +66,7 @@ node scripts/deploy.js link
 python scripts/deploy.py link
 ```
 
-### 2. Link to Web Server
-Link the `dist/` directory to your web server's document root (e.g., `/var/www/html/cvoc`).
-
-**Using Node.js:**
-```bash
-node scripts/deploy.js linkWeb
-```
-
-**Using Python:**
-```bash
-python scripts/deploy.py linkWeb
-```
-
-### 3. Compose and Customize Configuration
+### 2. Compose and Customize Configuration
 Use the interactive tool to select the services you want to deploy, combine their configurations, and optionally rewrite `js-url` to point to your local web server.
 
 **Using Node.js:**
@@ -90,6 +77,19 @@ node scripts/deploy.js compose
 **Using Python:**
 ```bash
 python scripts/deploy.py compose
+```
+
+### 3. Link to Web Server
+Link the `dist/` directory to your web server (e.g., `/var/www/html/cvoc`). The deployment script can help you identify the correct path based on your configuration.
+
+**Using Node.js:**
+```bash
+node scripts/deploy.js linkWeb
+```
+
+**Using Python:**
+```bash
+python scripts/deploy.py linkWeb
 ```
 
 ### 4. Update Dataverse Settings

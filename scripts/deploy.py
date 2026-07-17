@@ -191,10 +191,27 @@ def update_dataverse():
         print(f"Attempted command: {masked_command}")
 
 def link_web():
-    print('\nThis step will link your dist/ directory (containing js and img) to your web server\'s document root.')
-    print('It is recommended to link the entire dist/ directory so that both scripts and images are available.')
+    print('\nThis step will link your dist/ directory (containing js and img) to your web server.')
     
-    web_path = input('Enter the target path on your web server (e.g., /var/www/html/cvoc): ')
+    config_file = input(f"Reference configuration file to check for base URL (default: {DEFAULT_OUTPUT}): ") or DEFAULT_OUTPUT
+    if os.path.exists(config_file):
+        try:
+            with open(config_file, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+                for item in config:
+                    if 'js-url' in item:
+                        js_url = item['js-url'][0] if isinstance(item['js-url'], list) else item['js-url']
+                        if js_url and '/js/' in js_url:
+                            base_url = js_url[:js_url.rfind('/js/')]
+                            print(f"\nBased on {config_file}, your scripts are configured to be at: {js_url}")
+                            print(f"You should link the dist/ directory to the local directory corresponding to the web path: {base_url}")
+                            break
+        except Exception:
+            pass
+
+    print('\nIt is recommended to link the entire dist/ directory so that both scripts and images are available.')
+    
+    web_path = input('Enter the target path on your web server (the local directory corresponding to the web path used in the compose step): ')
     if not web_path:
         print('No path provided. Skipping.')
         return

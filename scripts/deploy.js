@@ -225,10 +225,29 @@ async function updateDataverse() {
  * Interactive linkWeb command to link dist directory to web server.
  */
 async function linkWeb() {
-    console.log('\nThis step will link your dist/ directory (containing js and img) to your web server\'s document root.');
-    console.log('It is recommended to link the entire dist/ directory so that both scripts and images are available.');
+    console.log('\nThis step will link your dist/ directory (containing js and img) to your web server.');
     
-    const webPath = await question('Enter the target path on your web server (e.g., /var/www/html/cvoc): ');
+    const configFile = await question(`Reference configuration file to check for base URL (default: ${DEFAULT_OUTPUT}): `) || DEFAULT_OUTPUT;
+    if (fs.existsSync(configFile)) {
+        try {
+            const config = JSON.parse(fs.readFileSync(configFile, 'utf8'));
+            const firstItem = config.find(item => item['js-url']);
+            if (firstItem) {
+                let jsUrl = Array.isArray(firstItem['js-url']) ? firstItem['js-url'][0] : firstItem['js-url'];
+                if (jsUrl && jsUrl.includes('/js/')) {
+                    const baseUrl = jsUrl.substring(0, jsUrl.lastIndexOf('/js/'));
+                    console.log(`\nBased on ${configFile}, your scripts are configured to be at: ${jsUrl}`);
+                    console.log(`You should link the dist/ directory to the local directory corresponding to the web path: ${baseUrl}`);
+                }
+            }
+        } catch (e) {
+            // Ignore parsing errors
+        }
+    }
+
+    console.log('\nIt is recommended to link the entire dist/ directory so that both scripts and images are available.');
+    
+    const webPath = await question('Enter the target path on your web server (the local directory corresponding to the web path used in the compose step): ');
     if (!webPath) {
         console.log('No path provided. Skipping.');
         return;
