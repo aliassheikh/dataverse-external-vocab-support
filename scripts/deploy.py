@@ -91,7 +91,7 @@ def list_configs():
         config_dir = os.path.join(SERVICES_DIR, service, 'configs')
         if os.path.exists(config_dir) and os.path.isdir(config_dir):
             for file in os.listdir(config_dir):
-                if file.endswith('.json'):
+                if file.endswith('.json') and not file.endswith('.schema.json'):
                     configs.append({
                         'service': service,
                         'name': file,

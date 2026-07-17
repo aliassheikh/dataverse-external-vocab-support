@@ -107,7 +107,7 @@ function listConfigs() {
         if (fs.existsSync(configDir) && fs.statSync(configDir).isDirectory()) {
             const files = fs.readdirSync(configDir);
             files.forEach(file => {
-                if (file.endsWith('.json')) {
+                if (file.endsWith('.json') && !file.endsWith('.schema.json')) {
                     configs.push({
                         service,
                         name: file,
