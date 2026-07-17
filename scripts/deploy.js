@@ -193,7 +193,7 @@ async function updateDataverse() {
         return;
     }
 
-    const dvUrl = await question('Dataverse URL (e.g., http://localhost:8080): ');
+    const dvUrl = await question('Dataverse URL (default: http://localhost:8080/): ') || 'http://localhost:8080/';
     const unblockKey = await question('Unblock Key (optional, if required by your Dataverse): ');
 
     let endpoint = `${dvUrl.replace(/\/$/, '')}/api/admin/settings/:CVocConf`;

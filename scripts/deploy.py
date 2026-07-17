@@ -160,7 +160,7 @@ def update_dataverse():
         print(f"Error: File {config_file} not found.")
         return
 
-    dv_url = input('Dataverse URL (e.g., http://localhost:8080): ')
+    dv_url = input('Dataverse URL (default: http://localhost:8080/): ') or 'http://localhost:8080/'
     unblock_key = input('Unblock Key (optional, if required by your Dataverse): ')
 
     endpoint = dv_url.rstrip('/') + '/api/admin/settings/:CVocConf'
