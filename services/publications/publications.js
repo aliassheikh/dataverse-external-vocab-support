@@ -115,8 +115,13 @@ $(document).ready(function() {
     loadI18n(lang, scriptSrc).then(function() {
         expandPublications();
         updatePublicationInputs();
-        refreshOrcidSupport();
-        setupPublicationsObserver();
+
+        // Only enable ORCID-related support if we are in edit mode
+        // (i.e., there are inputs for authors or publications)
+        if ($('input[data-cvoc-parent="author"]').length > 0 || $(window.publications.config.publicationInputSelector).length > 0) {
+            refreshOrcidSupport();
+            setupPublicationsObserver();
+        }
     });
 });
 
@@ -185,12 +190,20 @@ function expandPublications() {
             var identifierType = getElementValue(identifierTypeElement);
             var urlValue = getElementValue(urlElement);
             var pidUrl = getPidUrl(identifierType, identifier, '');
+            var pidText = '';
+            if (identifierType && identifier) {
+                if (identifierType.toLowerCase() === 'doi' && !identifier.toLowerCase().startsWith('doi:')) {
+                    pidText = 'doi:' + identifier;
+                } else {
+                    pidText = identifier;
+                }
+            }
 
             if (!citationText) {
                 citationText = identifier;
             }
 
-            var citationContent = buildPublicationCitationBlock(citationText, pidUrl, urlValue);
+            var citationContent = buildPublicationCitationBlock(citationText, pidUrl, urlValue, pidText);
 
             var displayElement = $('<div/>');
 
@@ -249,18 +262,10 @@ function formatFirstPublicationRow() {
     var cell = row.find('td').first();
     var rawHtml = cell.html() || '';
 
-    // Capture relation type from the visible text prefix, if present
-    var relationType = '';
-    var relationMatch = rawHtml.match(/^\s*([^:]+):\s*(.*)$/);
-    var citationHtml = rawHtml;
-    if (relationMatch) {
-        relationType = relationMatch[1].trim();
-        citationHtml = relationMatch[2].trim();
-    }
-
-    var temp = $('<div/>').html(citationHtml);
-
+    // Extract URLs and PID text from the raw HTML first
+    var temp = $('<div/>').html(rawHtml);
     var pidUrl = '';
+    var pidText = '';
     var otherUrl = '';
     var pidTypeNames = ['doi', 'issn', 'eissn', 'isbn', 'uri', 'url', 'pmid', 'handle', 'ark', 'arxiv', 'bibcode', 'cstr', 'ean13', 'lissn', 'lsid', 'purl', 'upc', 'urn'];
 
@@ -276,19 +281,37 @@ function formatFirstPublicationRow() {
 
         if (isPidUrl && !pidUrl) {
             pidUrl = href.replace(/[.,;]+$/, '');
+            pidText = $(this).text().trim();
         } else if (!isPidUrl && !otherUrl) {
             otherUrl = href.replace(/[.,;]+$/, '');
         }
     });
 
-    // Remove the embedded link block, but keep the surrounding citation text
-    citationHtml = citationHtml.replace(/<span>\s*<a\b[^>]*>.*?<\/a>\s*<\/span>/ig, '');
+    // We remove the identifier span from the citation HTML to separate the citation text 
+    // from the identifier. This allows us to format the PID link separately and ensures 
+    // that any colons in the identifier are not misidentified as relationship separators.
+    var cleanHtml = rawHtml.replace(/<span>\s*<a\b[^>]*>.*?<\/a>\s*<\/span>/ig, '');
 
+    // Capture relation type from the cleaned HTML
+    var relationType = '';
+    var allowedRelations = ['iscitedby', 'cites', 'issupplementto', 'issupplementedby', 'isreferencedby', 'references'];
+    var relationMatch = cleanHtml.match(/^\s*([^:]+):\s*(.*)$/);
+    var citationHtml = cleanHtml;
+    if (relationMatch) {
+        var potentialRelation = relationMatch[1].trim();
+        if (allowedRelations.indexOf(potentialRelation.toLowerCase()) !== -1) {
+            relationType = potentialRelation;
+            citationHtml = relationMatch[2].trim();
+        }
+    }
+
+    // Get the plain text citation from the cleaned (and potentially split) HTML
     var citationText = $('<div/>').html(citationHtml).text()
         .replace(/\s{2,}/g, ' ')
         .trim();
 
     var displayElement = $('<div/>');
+    var citationBlock = buildPublicationCitationBlock(citationText, pidUrl, otherUrl, pidText);
 
     if (relationType) {
         displayElement.append(
@@ -297,18 +320,19 @@ function formatFirstPublicationRow() {
                 'margin-bottom': '0.5em'
             }).text(relationType)
         );
+        // Indent the citation if there's a relationship label above it
+        displayElement.append(
+            $('<div/>').css('margin-left', '2em').append(citationBlock)
+        );
+    } else {
+        // No relationship specified, just show the citation block
+        displayElement.append(citationBlock);
     }
-
-    displayElement.append(
-        $('<div/>').css('margin-left', '2em').append(
-            buildPublicationCitationBlock(citationText, pidUrl, otherUrl)
-        )
-    );
 
     cell.empty().append(displayElement);
 }
 
-function buildPublicationCitationBlock(citationText, pidUrl, urlValue) {
+function buildPublicationCitationBlock(citationText, pidUrl, urlValue, pidText) {
     var citationContent = $('<div/>').css({
         'margin-left': '2em',
         'margin-right': '2em',
@@ -326,7 +350,7 @@ function buildPublicationCitationBlock(citationText, pidUrl, urlValue) {
                     .attr('href', pidUrl)
                     .attr('target', '_blank')
                     .attr('rel', 'noopener noreferrer')
-                    .text('[PID]')
+                    .text(pidText || '[PID]')
             );
     }
 
@@ -1077,7 +1101,7 @@ function showOrcidTeaser() {
 
     // Find the label for the 'Related Publication' field and append the teaser there.
     const publicationLabel = $('#metadata_publication');
-    if (publicationLabel) {
+    if (publicationLabel.length > 0) {
         publicationLabel.append(teaser);
     }
 }
@@ -1091,6 +1115,13 @@ function hideOrcidTeaser() {
  * based on the presence of ORCID identifiers in the author fields.
  */
 function refreshOrcidSupport() {
+    // Only proceed if we are in edit mode (at least one author or publication input exists)
+    if ($('input[data-cvoc-parent="author"]').length === 0 && $(window.publications.config.publicationInputSelector).length === 0) {
+        $('.orcid-button-container').hide();
+        hideOrcidTeaser();
+        return;
+    }
+
     var orcidIds = findAuthorOrcids();
     if (orcidIds.length > 0) {
         $('.orcid-button-container').show();
