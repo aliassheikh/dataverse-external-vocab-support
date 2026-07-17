@@ -3,8 +3,7 @@
     "field-name": "publication",
     "term-uri-field": "publicationIDNumber",
     "js-url": [
-      "https://cdn.jsdelivr.net/npm/citation-js",
-      "http://gdcc.github.io/dataverse-external-vocab-support/dist/js/publications.js",
+      "https://gdcc.github.io/dataverse-external-vocab-support/dist/js/publications.js",
       "https://gdcc.github.io/dataverse-external-vocab-support/dist/js/cvocutils.js"
     ],
     "protocol": "publication",

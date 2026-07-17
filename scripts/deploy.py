@@ -139,7 +139,8 @@ def compose():
 
     rewrite = input('\nRewrite js-url to a local base URL? (y/N): ')
     if rewrite.lower() == 'y':
-        base_url = input('Enter local base URL (e.g., http://localhost/js/): ')
+        print('\nNote: The base URL should be the location where the *.js scripts are hosted (e.g., the URL of your dist/js directory).')
+        base_url = input('Enter local base URL (e.g., http://localhost/dist/js/): ')
         rewrite_js_urls(output_file, base_url)
 
     print(f"\nConfiguration saved to {output_file}")

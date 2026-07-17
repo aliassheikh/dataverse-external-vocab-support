@@ -163,7 +163,8 @@ async function compose() {
 
     const rewrite = await question('\nRewrite js-url to a local base URL? (y/N): ');
     if (rewrite.toLowerCase() === 'y') {
-        const baseUrl = await question('Enter local base URL (e.g., http://localhost/js/): ');
+        console.log('\nNote: The base URL should be the location where the *.js scripts are hosted (e.g., the URL of your dist/js directory).');
+        const baseUrl = await question('Enter local base URL (e.g., http://localhost/dist/js/): ');
         rewriteJsUrls(outputFile, baseUrl);
     }
 
