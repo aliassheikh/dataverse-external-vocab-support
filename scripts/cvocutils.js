@@ -58,3 +58,25 @@ function getValue(prefix, id) {
         console.log("Problem getting value from localStorage: " + e);
     }
 }
+
+/**
+ * Injects common CSS styles for CVOC scripts, specifically for Select2 search results.
+ */
+function injectCvocStyles() {
+    if ($('#cvoc-styles').length === 0) {
+        $('<style id="cvoc-styles">')
+            .prop('type', 'text/css')
+            .html(`
+                .cvoc-extra-info {
+                    font-size: 0.85em;
+                    color: #777;
+                    margin-left: 0px;
+                }
+                .select2-results__option--highlighted .cvoc-extra-info,
+                .select2-highlighted .cvoc-extra-info {
+                    color: #fff !important;
+                }
+            `)
+            .appendTo('head');
+    }
+}

@@ -90,6 +90,7 @@ function loadCslStyle() {
 }
 
 $(document).ready(function() {
+    injectCvocStyles();
     var lang = $('html').attr('lang') || 'en';
     var scriptSrc = $('script[src*="publications.js"]').attr('src');
 
@@ -885,13 +886,13 @@ function formatPublication(publication) {
 
     var orcidInfo = '';
     if (publication.orcidId) {
-        orcidInfo = '<div class="publication-orcid text-muted small">From ORCID: ' + publication.orcidId + '</div>';
+        orcidInfo = '<div class="cvoc-extra-info text-muted small">From ORCID: ' + publication.orcidId + '</div>';
     }
 
     return $(
         '<div class="publication-item">' +
         '<div class="publication-title">' + publication.text + '</div>' +
-        '<div class="publication-doi text-muted small">' + publication.identifierType + ': ' + publication.id + '</div>' +
+        '<div class="cvoc-extra-info text-muted small">' + publication.identifierType + ': ' + publication.id + '</div>' +
         orcidInfo +
         '</div>'
     );

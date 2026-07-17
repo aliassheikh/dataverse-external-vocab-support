@@ -35,7 +35,7 @@ window.personOrg = {
 };
 
 $(document).ready(function () {
-    injectStyles();
+    injectCvocStyles();
     var lang = $('html').attr('lang') || 'en';
     var scriptSrc = Array.from(document.scripts)
         .map(s => s.src)
@@ -46,28 +46,6 @@ $(document).ready(function () {
         updatePersonOrOrgInputs();
     });
 });
-
-/**
- * Injects CSS styles for the person-or-org script.
- */
-function injectStyles() {
-    if ($('#cvoc-person-org-styles').length === 0) {
-        $('<style id="cvoc-person-org-styles">')
-            .prop('type', 'text/css')
-            .html(`
-                .cvoc-extra-info {
-                    font-size: 0.85em;
-                    color: #666;
-                    margin-left: 0px;
-                }
-                .select2-results__option--highlighted .cvoc-extra-info,
-                .select2-highlighted .cvoc-extra-info {
-                    color: #fff;
-                }
-            `)
-            .appendTo('head');
-    }
-}
 
 /**
  * Asynchronously loads the internationalization properties for the current locale.
