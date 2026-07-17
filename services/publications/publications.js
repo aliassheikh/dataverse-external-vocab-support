@@ -9,7 +9,19 @@ window.publications.config = window.publications.config || {
 
 window.publications.state = window.publications.state || {
     orcidBaseUrl: null,
-    i18n: null,
+    i18n: {
+        searchAndSelectPublication: "Search and select a publication:",
+        cancel: "Cancel",
+        loadingPublicationsOne: "Loading publications from ORCID profile...",
+        loadingPublicationsMany: "Loading publications from {0} ORCID profiles...",
+        selectPublication: "Select a publication",
+        findUsingOrcid: "Find using ORCID",
+        findUsingOrcid_ariaLabel: "Simplify adding publications by importing them the authors' ORCID profiles",
+        findAndImportPublicationFromOrcid: "Find and import publication from ORCID",
+        addOrcidForAuthorsHint: "Hint: If you add ORCIDs for authors, you can select Related Publications from their profiles!",
+        relationNotSpecified: "(Relation not specified)"
+    },
+    loadedLang: null,
     i18nPromise: null,
     cslStylePromise: null,
     citationJsPromise: null
@@ -92,7 +104,9 @@ function loadCslStyle() {
 $(document).ready(function() {
     injectCvocStyles();
     var lang = $('html').attr('lang') || 'en';
-    var scriptSrc = $('script[src*="publications.js"]').attr('src');
+    var scriptSrc = Array.from(document.scripts)
+        .map(function(s) { return s.src; })
+        .find(function(src) { return src && src.includes("publications.js"); });
 
     loadCslStyle().catch(function(error) {
         console.warn("Citation formatting initialization failed; fallback citations will be used:", error);
@@ -343,7 +357,7 @@ function buildPublicationCitationBlock(citationText, pidUrl, urlValue) {
 function loadI18n(lang, scriptPath) {
     var state = window.publications.state;
 
-    if (state.i18n) {
+    if (state.loadedLang === lang && state.i18n) {
         return Promise.resolve(state.i18n);
     }
 
@@ -352,22 +366,17 @@ function loadI18n(lang, scriptPath) {
     }
 
     function getDefaultI18n() {
-        return {
-            searchAndSelectPublication: "Search and select a publication:",
-            cancel: "Cancel",
-            loadingPublicationsOne: "Loading publications from ORCID profile...",
-            loadingPublicationsMany: "Loading publications from {0} ORCID profiles...",
-            selectPublication: "Select a publication",
-            findUsingOrcid: "Find using ORCID",
-            findUsingOrcid_ariaLabel: "Simplify adding publications by importing them the authors' ORCID profiles",
-            findAndImportPublicationFromOrcid: "Find and import publication from ORCID",
-            addOrcidForAuthorsHint: "Hint: If you add ORCIDs for authors, you can select Related Publications from their profiles!",
-            relationNotSpecified: "(Relation not specified)"
-        };
+        return state.i18n;
     }
 
     function fetchI18n(targetLang) {
-        var langFile = scriptPath.substring(0, scriptPath.lastIndexOf('/')) + '/i18n/publications_' + targetLang + '.json';
+        if (!scriptPath) {
+            console.warn("Could not determine script path for publications.js. Using default i18n.");
+            return Promise.resolve(getDefaultI18n());
+        }
+
+        var lastSlash = scriptPath.lastIndexOf('/');
+        var langFile = (lastSlash !== -1 ? scriptPath.substring(0, lastSlash) : '.') + '/i18n/publications_' + targetLang + '.json';
 
         return fetch(langFile)
             .then(function(response) {
@@ -396,6 +405,7 @@ function loadI18n(lang, scriptPath) {
     state.i18nPromise = fetchI18n(lang || 'en')
         .then(function(data) {
             state.i18n = data;
+            state.loadedLang = lang || 'en';
             return data;
         })
         .finally(function() {
@@ -419,6 +429,9 @@ function formatString(str) {
 
 function updatePublicationInputs() {
     var i18n = window.publications.state.i18n;
+    if (!i18n) {
+        return;
+    }
 
     $(window.publications.config.publicationInputSelector).each(function () {
         var identifierInput = this;

@@ -70,6 +70,11 @@ function loadI18n(lang, scriptPath) {
     }
 
     function fetchI18n(targetLang) {
+        if (!scriptPath) {
+            console.warn("Could not determine script path for person-or-org.js. Using default i18n.");
+            return Promise.resolve(getDefaultI18n());
+        }
+
         var langFile = scriptPath.substring(0, scriptPath.lastIndexOf('/')) + '/i18n/person-or-org_' + targetLang + '.json';
 
         return fetch(langFile)
