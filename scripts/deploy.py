@@ -172,7 +172,7 @@ def update_dataverse():
 
     try:
         command = ['curl', '-X', 'PUT', '--upload-file', config_file, endpoint]
-        result = subprocess.run(command, capture_output=True, text=True)
+        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         print('\nResponse from Dataverse:')
         print(result.stdout)
         if result.returncode == 0:
