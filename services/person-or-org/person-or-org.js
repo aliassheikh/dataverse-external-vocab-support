@@ -842,10 +842,20 @@ function expandPerson(element, id, orcidBaseUrl, managedFields) {
                 const scriptUrl = Array.from(document.scripts)
                     .map(s => s.src)
                     .find(src => src && src.includes("person-or-org.js"));
-                //Use authenticated or unauthenticated ORCID icon/syntax
-                const orcidIconUrl = scriptUrl
-                    ? scriptUrl.replace("/js/person-or-org.js", (authenticated ? "/img/ORCID-iD_icon_16x16-preview.webp" : "/img/ORCID-iD_icon_unauth_16x16-preview.webp"))
-                    : "";
+                // Use authenticated or unauthenticated ORCID icon/syntax
+----------------------------------------------------------------------------------------------------------------------------------------------------------------                // We expect the script to be in .../js/ and images in .../img/
+                let orcidIconUrl = "";
+                if (scriptUrl) {
+                    const iconFile = authenticated ? "ORCID-iD_icon_16x16-preview.webp" : "ORCID-iD_icon_unauth_16x16-preview.webp";
+                    // Strip any query parameters
+                    const cleanScriptUrl = scriptUrl.split('?')[0];
+                    if (cleanScriptUrl.includes("/js/")) {
+                        orcidIconUrl = cleanScriptUrl.substring(0, cleanScriptUrl.lastIndexOf("/js/")) + "/img/" + iconFile;
+                    } else {
+                        // Fallback: assume img is a sibling directory to wherever the script is
+                        orcidIconUrl = cleanScriptUrl.substring(0, cleanScriptUrl.lastIndexOf("/")) + "/img/" + iconFile;
+                    }
+                }
                 var displayElement = $('<span/>').text(name).append($('<a/>').attr('href', orcidBaseUrl + id).attr('target', '_blank').attr('rel', 'noopener').html(
                     '<img alt="' + i18n.orcidLogoAlt + '" src="' + orcidIconUrl + '" width="16" height="16" />').attr('title', i18n.orcidProfileTooltip));
                 if (!authenticated) {

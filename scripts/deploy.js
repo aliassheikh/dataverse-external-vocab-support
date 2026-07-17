@@ -6,6 +6,7 @@ const { composeCvocConfig } = require('./compose-cvoc-conf');
 
 const SERVICES_DIR = path.join(__dirname, '..', 'services');
 const DIST_DIR = path.join(__dirname, '..', 'dist', 'js');
+const DIST_IMG_DIR = path.join(__dirname, '..', 'dist', 'img');
 const DEFAULT_OUTPUT = 'CVocConf.json';
 
 const rl = readline.createInterface({
@@ -55,6 +56,7 @@ function linkServices() {
     console.log('Populating dist/ directory...');
     ensureDir(DIST_DIR);
     ensureDir(path.join(DIST_DIR, 'i18n'));
+    ensureDir(DIST_IMG_DIR);
 
     const services = fs.readdirSync(SERVICES_DIR);
 
@@ -78,6 +80,15 @@ function linkServices() {
                 if (file.endsWith('.json')) {
                     createSymlink(path.join(i18nDir, file), path.join(DIST_DIR, 'i18n', file));
                 }
+            });
+        }
+
+        // Link img files
+        const imgDir = path.join(servicePath, 'img');
+        if (fs.existsSync(imgDir) && fs.statSync(imgDir).isDirectory()) {
+            const imgFiles = fs.readdirSync(imgDir);
+            imgFiles.forEach(file => {
+                createSymlink(path.join(imgDir, file), path.join(DIST_IMG_DIR, file));
             });
         }
     });

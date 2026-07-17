@@ -16,6 +16,7 @@ compose_cvoc_config = compose_module.compose_cvoc_config
 ROOT_DIR = os.path.dirname(SCRIPTS_DIR)
 SERVICES_DIR = os.path.join(ROOT_DIR, 'services')
 DIST_DIR = os.path.join(ROOT_DIR, 'dist', 'js')
+DIST_IMG_DIR = os.path.join(ROOT_DIR, 'dist', 'img')
 DEFAULT_OUTPUT = 'CVocConf.json'
 
 def ensure_dir(directory):
@@ -51,6 +52,7 @@ def link_services():
     print('Populating dist/ directory...')
     ensure_dir(DIST_DIR)
     ensure_dir(os.path.join(DIST_DIR, 'i18n'))
+    ensure_dir(DIST_IMG_DIR)
 
     if not os.path.exists(SERVICES_DIR):
         print(f"Error: {SERVICES_DIR} not found.")
@@ -72,6 +74,12 @@ def link_services():
             for file in os.listdir(i18n_dir):
                 if file.endswith('.json'):
                     create_symlink(os.path.join(i18n_dir, file), os.path.join(DIST_DIR, 'i18n', file))
+
+        # Link img files
+        img_dir = os.path.join(service_path, 'img')
+        if os.path.exists(img_dir) and os.path.isdir(img_dir):
+            for file in os.listdir(img_dir):
+                create_symlink(os.path.join(img_dir, file), os.path.join(DIST_IMG_DIR, file))
 
 def list_configs():
     configs = []
