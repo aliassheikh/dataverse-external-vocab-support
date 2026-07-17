@@ -107,14 +107,16 @@ def rewrite_js_urls(config_path, base_url):
     with open(config_path, 'r', encoding='utf-8') as f:
         config = json.load(f)
 
-    for item in config:
-        if 'js-url' in item and isinstance(item['js-url'], list):
-            item['js-url'] = [
-                f"{base_url.rstrip('/')}/{os.path.basename(url)}"
-                for url in item['js-url']
-            ]
-        elif 'js-url' in item and isinstance(item['js-url'], str):
-             item['js-url'] = f"{base_url.rstrip('/')}/{os.path.basename(item['js-url'])}"
+    config_list = config if isinstance(config, list) else [config]
+    for item in config_list:
+        if 'js-url' in item:
+            urls = item['js-url'] if isinstance(item['js-url'], list) else [item['js-url']]
+            updated_urls = []
+            for url in urls:
+                file_name = os.path.basename(url)
+                # The base URL now points to the dist root, so we add /js/
+                updated_urls.append(f"{base_url.rstrip('/')}/js/{file_name}")
+            item['js-url'] = updated_urls if isinstance(item['js-url'], list) else updated_urls[0]
 
     with open(config_path, 'w', encoding='utf-8') as f:
         json.dump(config, f, indent=2, ensure_ascii=False)
@@ -148,8 +150,8 @@ def compose():
 
     rewrite = input('\nRewrite js-url to a local base URL? (y/N): ')
     if rewrite.lower() == 'y':
-        print('\nNote: The base URL should be the location where the *.js scripts are hosted (e.g., the URL of your dist/js directory).')
-        base_url = input('Enter local base URL (e.g., http://localhost/dist/js/): ')
+        print('\nNote: The base URL should be the location where the dist/ directory will be linked (e.g., the URL of your cvoc directory).')
+        base_url = input('Enter local base URL (e.g., http://localhost/cvoc/): ')
         rewrite_js_urls(output_file, base_url)
 
     print(f"\nConfiguration saved to {output_file}")
@@ -205,7 +207,8 @@ def link_web():
                     if 'js-url' in item:
                         js_url = item['js-url'][0] if isinstance(item['js-url'], list) else item['js-url']
                         if js_url:
-                            print(f"\nBased on {config_file}, your scripts are configured to be at: {js_url}")
+                            script_dir = js_url[:js_url.rfind('/')]
+                            print(f"\nBased on {config_file}, your scripts are configured to be in: {script_dir}/")
                             if '/js/' in js_url:
                                 base_url = js_url[:js_url.rfind('/js/')]
                                 print(f"You should link the dist/ directory to the local directory corresponding to the web path: {base_url}")
@@ -225,6 +228,10 @@ def link_web():
     web_path = input('Enter the target path on your web server (the local directory corresponding to the web path used in the compose step): ')
     if not web_path:
         print('No path provided. Skipping.')
+        return
+
+    if os.path.exists(web_path):
+        print(f"\nNote: {web_path} already exists. Skipping link creation.")
         return
 
     absolute_dist = os.path.abspath(DIST_ROOT)

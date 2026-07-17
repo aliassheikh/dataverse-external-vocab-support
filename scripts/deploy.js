@@ -131,17 +131,21 @@ function rewriteJsUrls(configPath, baseUrl) {
     const content = fs.readFileSync(configPath, 'utf8');
     const config = JSON.parse(content);
 
-    const updatedConfig = config.map(item => {
-        if (item['js-url'] && Array.isArray(item['js-url'])) {
-            item['js-url'] = item['js-url'].map(url => {
+    const configArray = Array.isArray(config) ? config : [config];
+    const updatedConfig = configArray.map(item => {
+        if (item['js-url']) {
+            const urls = Array.isArray(item['js-url']) ? item['js-url'] : [item['js-url']];
+            const updatedUrls = urls.map(url => {
                 const fileName = path.basename(url);
-                return `${baseUrl.replace(/\/$/, '')}/${fileName}`;
+                // The base URL now points to the dist root, so we add /js/
+                return `${baseUrl.replace(/\/$/, '')}/js/${fileName}`;
             });
+            item['js-url'] = Array.isArray(item['js-url']) ? updatedUrls : updatedUrls[0];
         }
         return item;
     });
 
-    fs.writeFileSync(configPath, JSON.stringify(updatedConfig, null, 2), 'utf8');
+    fs.writeFileSync(configPath, JSON.stringify(Array.isArray(config) ? updatedConfig : updatedConfig[0], null, 2), 'utf8');
 }
 
 /**
@@ -175,8 +179,8 @@ async function compose() {
 
     const rewrite = await question('\nRewrite js-url to a local base URL? (y/N): ');
     if (rewrite.toLowerCase() === 'y') {
-        console.log('\nNote: The base URL should be the location where the *.js scripts are hosted (e.g., the URL of your dist/js directory).');
-        const baseUrl = await question('Enter local base URL (e.g., http://localhost/dist/js/): ');
+        console.log('\nNote: The base URL should be the location where the dist/ directory will be linked (e.g., the URL of your cvoc directory).');
+        const baseUrl = await question('Enter local base URL (e.g., http://localhost/cvoc/): ');
         rewriteJsUrls(outputFile, baseUrl);
     }
 
@@ -236,7 +240,8 @@ async function linkWeb() {
             if (firstItem) {
                 let jsUrl = Array.isArray(firstItem['js-url']) ? firstItem['js-url'][0] : firstItem['js-url'];
                 if (jsUrl) {
-                    console.log(`\nBased on ${configFile}, your scripts are configured to be at: ${jsUrl}`);
+                    const scriptDir = jsUrl.substring(0, jsUrl.lastIndexOf('/'));
+                    console.log(`\nBased on ${configFile}, your scripts are configured to be in: ${scriptDir}/`);
                     if (jsUrl.includes('/js/')) {
                         const baseUrl = jsUrl.substring(0, jsUrl.lastIndexOf('/js/'));
                         console.log(`You should link the dist/ directory to the local directory corresponding to the web path: ${baseUrl}`);
@@ -261,6 +266,11 @@ async function linkWeb() {
     const webPath = await question('Enter the target path on your web server (the local directory corresponding to the web path used in the compose step): ');
     if (!webPath) {
         console.log('No path provided. Skipping.');
+        return;
+    }
+
+    if (fs.existsSync(webPath)) {
+        console.log(`\nNote: ${webPath} already exists. Skipping link creation.`);
         return;
     }
 
