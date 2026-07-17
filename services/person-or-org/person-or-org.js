@@ -843,7 +843,7 @@ function expandPerson(element, id, orcidBaseUrl, managedFields) {
                     .map(s => s.src)
                     .find(src => src && src.includes("person-or-org.js"));
                 // Use authenticated or unauthenticated ORCID icon/syntax
-----------------------------------------------------------------------------------------------------------------------------------------------------------------                // We expect the script to be in .../js/ and images in .../img/
+                // We expect the script to be in .../js/ and images in .../img/
                 let orcidIconUrl = "";
                 if (scriptUrl) {
                     const iconFile = authenticated ? "ORCID-iD_icon_16x16-preview.webp" : "ORCID-iD_icon_unauth_16x16-preview.webp";
