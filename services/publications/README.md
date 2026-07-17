@@ -28,6 +28,7 @@ This example requires several files:
 1. **Production Deployment (Recommended):** Use the interactive deployment tool in the root directory:
    ```bash
    node scripts/deploy.js link
+   node scripts/deploy.js linkWeb
    node scripts/deploy.js compose
    node scripts/deploy.js updateDataverse
    ```

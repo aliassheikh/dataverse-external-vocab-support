@@ -5,8 +5,9 @@ const readline = require('readline');
 const { composeCvocConfig } = require('./compose-cvoc-conf');
 
 const SERVICES_DIR = path.join(__dirname, '..', 'services');
-const DIST_DIR = path.join(__dirname, '..', 'dist', 'js');
-const DIST_IMG_DIR = path.join(__dirname, '..', 'dist', 'img');
+const DIST_ROOT = path.join(__dirname, '..', 'dist');
+const DIST_DIR = path.join(DIST_ROOT, 'js');
+const DIST_IMG_DIR = path.join(DIST_ROOT, 'img');
 const DEFAULT_OUTPUT = 'CVocConf.json';
 
 const rl = readline.createInterface({
@@ -220,6 +221,41 @@ async function updateDataverse() {
     }
 }
 
+/**
+ * Interactive linkWeb command to link dist directory to web server.
+ */
+async function linkWeb() {
+    console.log('\nThis step will link your dist/ directory (containing js and img) to your web server\'s document root.');
+    console.log('It is recommended to link the entire dist/ directory so that both scripts and images are available.');
+    
+    const webPath = await question('Enter the target path on your web server (e.g., /var/www/html/cvoc): ');
+    if (!webPath) {
+        console.log('No path provided. Skipping.');
+        return;
+    }
+
+    const absoluteDist = path.resolve(DIST_ROOT);
+    console.log(`Linking ${absoluteDist} to ${webPath}...`);
+
+    try {
+        if (process.platform === 'win32') {
+            // Use junction for directories on Windows
+            execSync(`cmd /c mklink /j "${webPath}" "${absoluteDist}"`);
+        } else {
+            execSync(`ln -s "${absoluteDist}" "${webPath}"`);
+        }
+        console.log(`\nSuccess: Linked ${absoluteDist} to ${webPath}`);
+    } catch (err) {
+        console.error(`\nFailed to create link: ${err.message}`);
+        console.log('\nPlease run the following command manually (possibly with sudo):');
+        if (process.platform === 'win32') {
+            console.log(`  mklink /j "${webPath}" "${absoluteDist}"`);
+        } else {
+            console.log(`  sudo ln -s "${absoluteDist}" "${webPath}"`);
+        }
+    }
+}
+
 async function main() {
     const args = process.argv.slice(2);
     const command = args[0] || 'help';
@@ -237,11 +273,16 @@ async function main() {
             await updateDataverse();
             rl.close();
             break;
+        case 'linkWeb':
+            await linkWeb();
+            rl.close();
+            break;
         case 'help':
         default:
             console.log('Usage: node scripts/deploy.js [command]');
             console.log('Commands:');
             console.log('  link     Populate dist/ directory with symlinks to services');
+            console.log('  linkWeb  Link the dist/ directory to your web server');
             console.log('  compose  Interactively select and combine configurations');
             console.log('  updateDataverse  Upload a configuration to Dataverse API');
             rl.close();

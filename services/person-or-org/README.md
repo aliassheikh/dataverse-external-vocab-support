@@ -31,7 +31,7 @@ Testing:
 
 Production:
 
-- Use the `scripts/deploy.js link` (or `python scripts/deploy.py link`) command to populate the `dist/` directory and then link that to your local website. Adjust the URLs in your configuration (using the `compose` command) to point to your local copies. This assures that changes in this repository will not automatically be used on your site.
+- Use the `scripts/deploy.js link` (or `python scripts/deploy.py link`) command to populate the `dist/` directory and then use the `linkWeb` command to link it to your local website. Adjust the URLs in your configuration (using the `compose` command) to point to your local copies. This assures that changes in this repository will not automatically be used on your site.
 - The required files (available in `dist/js/` after linking) are:
 
   - `person-or-org.js` : the Javascript file that provides ORCID and ROR support,

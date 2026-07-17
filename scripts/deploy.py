@@ -15,8 +15,9 @@ compose_cvoc_config = compose_module.compose_cvoc_config
 
 ROOT_DIR = os.path.dirname(SCRIPTS_DIR)
 SERVICES_DIR = os.path.join(ROOT_DIR, 'services')
-DIST_DIR = os.path.join(ROOT_DIR, 'dist', 'js')
-DIST_IMG_DIR = os.path.join(ROOT_DIR, 'dist', 'img')
+DIST_ROOT = os.path.join(ROOT_DIR, 'dist')
+DIST_DIR = os.path.join(DIST_ROOT, 'js')
+DIST_IMG_DIR = os.path.join(DIST_ROOT, 'img')
 DEFAULT_OUTPUT = 'CVocConf.json'
 
 def ensure_dir(directory):
@@ -189,6 +190,33 @@ def update_dataverse():
         masked_command = f"curl -X PUT --upload-file \"{config_file}\" \"{masked_endpoint}\""
         print(f"Attempted command: {masked_command}")
 
+def link_web():
+    print('\nThis step will link your dist/ directory (containing js and img) to your web server\'s document root.')
+    print('It is recommended to link the entire dist/ directory so that both scripts and images are available.')
+    
+    web_path = input('Enter the target path on your web server (e.g., /var/www/html/cvoc): ')
+    if not web_path:
+        print('No path provided. Skipping.')
+        return
+
+    absolute_dist = os.path.abspath(DIST_ROOT)
+    print(f"Linking {absolute_dist} to {web_path}...")
+
+    try:
+        if os.name == 'nt':
+            # Use junction for directories on Windows
+            subprocess.check_call(['cmd', '/c', 'mklink', '/j', web_path, absolute_dist], shell=True)
+        else:
+            os.symlink(absolute_dist, web_path)
+        print(f"\nSuccess: Linked {absolute_dist} to {web_path}")
+    except Exception as e:
+        print(f"\nFailed to create link: {e}")
+        print('\nPlease run the following command manually (possibly with sudo):')
+        if os.name == 'nt':
+            print(f"  mklink /j \"{web_path}\" \"{absolute_dist}\"")
+        else:
+            print(f"  sudo ln -s \"{absolute_dist}\" \"{web_path}\"")
+
 def main():
     if len(sys.argv) < 2:
         command = 'help'
@@ -201,10 +229,13 @@ def main():
         compose()
     elif command == 'updateDataverse':
         update_dataverse()
+    elif command == 'linkWeb':
+        link_web()
     else:
         print('Usage: python scripts/deploy.py [command]')
         print('Commands:')
         print('  link     Populate dist/ directory with symlinks to services')
+        print('  linkWeb  Link the dist/ directory to your web server')
         print('  compose  Interactively select and combine configurations')
         print('  updateDataverse  Upload a configuration to Dataverse API')
 

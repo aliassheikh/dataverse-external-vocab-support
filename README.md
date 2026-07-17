@@ -53,8 +53,8 @@ The following services are being used in production (or testing) at one or more 
 
 We provide an interactive deployment script to simplify the process of configuring and installing CVOC scripts.
 
-### 1. Initialize the Distribution Directory
-Populate the `dist/` directory with symlinks to the service files. This directory can then be linked to your web server (e.g., Apache or Nginx).
+### 1. Populate the Distribution Directory
+Populate the `dist/` directory with symlinks to the service files (scripts, images, i18n).
 
 **Using Node.js:**
 ```bash
@@ -66,7 +66,20 @@ node scripts/deploy.js link
 python scripts/deploy.py link
 ```
 
-### 2. Compose and Customize Configuration
+### 2. Link to Web Server
+Link the `dist/` directory to your web server's document root (e.g., `/var/www/html/cvoc`).
+
+**Using Node.js:**
+```bash
+node scripts/deploy.js linkWeb
+```
+
+**Using Python:**
+```bash
+python scripts/deploy.py linkWeb
+```
+
+### 3. Compose and Customize Configuration
 Use the interactive tool to select the services you want to deploy, combine their configurations, and optionally rewrite `js-url` to point to your local web server.
 
 **Using Node.js:**
@@ -79,7 +92,7 @@ node scripts/deploy.js compose
 python scripts/deploy.py compose
 ```
 
-### 3. Update Dataverse Settings
+### 4. Update Dataverse Settings
 Upload the generated `CVocConf.json` directly to your Dataverse instance.
 
 **Using Node.js:**
