@@ -109,10 +109,14 @@ async function cvoc_lc_editProject() {
       } else {
         // If projectInput doesn't have a value, search using the persistentId
         const response = await fetch(`${serviceUrl}?persistentId=${persistentId}`);
+        if (!response.ok) {
+          console.error("Local Contexts API error: Failed to fetch projects. Status:", response.status);
+          continue;
+        }
         const responseJson = await response.json();
         const data = responseJson.data
 
-        if (data.count === 1) {
+        if (data && data.count === 1) {
           const fullUrl = data.results[0].project_page
           const project = await cvoc_lc_LoadOrFetch(fullUrl, serviceUrl, persistentId)
           // If one project is found, display it with an 'Add Link' button
@@ -123,7 +127,7 @@ async function cvoc_lc_editProject() {
           displayElement.append(`
           <button class="btn btn-default" onclick="cvoc_lc_linkProject('${num}', '${project.project_page}')">Add Link</button>
         `);
-        } else if (data.count === 0) {
+        } else if (data && data.count === 0) {
           // If no project is found, display the message
           displayElement.html(`
           <p>No LocalContext project found. To create a link with a Dataverse dataset, you must create a project on the 
@@ -218,6 +222,10 @@ async function cvoc_lc_LoadOrFetch(fullUrl, serviceUrl, persistentId) {
   }
   const project = await response.json()
   const data = project.data
-  sessionStorage.setItem(lc_uuid, JSON.stringify(data))
-  return data
+  if (data) {
+    sessionStorage.setItem(lc_uuid, JSON.stringify(data))
+  } else {
+    console.error("Local Contexts API error: No data returned for project", lc_uuid);
+  }
+  return data || {}
 }
