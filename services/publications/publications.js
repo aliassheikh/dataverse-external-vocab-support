@@ -920,10 +920,16 @@ function extractOrcidIdFromUrl(orcidUrlOrId) {
     }
 
     var orcidUrlPattern = /^https?:\/\/(?:sandbox\.)?orcid\.org\/(.+)$/i;
-    var match = orcidUrlOrId.match(orcidUrlPattern);
+    var orcidPrefixPattern = /^orcid:(.+)$/i;
+    var matchUrl = orcidUrlOrId.match(orcidUrlPattern);
 
-    if (match && match[1]) {
-        return match[1];
+    if (matchUrl && matchUrl[1]) {
+        return matchUrl[1];
+    }
+
+    var matchPrefix = orcidUrlOrId.match(orcidPrefixPattern);
+    if (matchPrefix && matchPrefix[1]) {
+        return matchPrefix[1];
     }
 
     // If it's not a URL, assume it's already the ID
@@ -938,9 +944,10 @@ function extractOrcidIdFromUrl(orcidUrlOrId) {
  */
 function findAuthorOrcids() {
     var orcidIds = [];
-    var orcidInputs = $('input[data-cvoc-protocol^="orcid"][data-cvoc-parent="author"]');
+    // Check all subfields of author for ORCID identifiers
+    var authorSubfields = $('[data-cvoc-parent="author"]');
 
-    orcidInputs.each(function() {
+    authorSubfields.each(function() {
         var value = $(this).val();
         if (value) {
             var orcidId = extractOrcidIdFromUrl(value);
@@ -1112,8 +1119,8 @@ function setupPublicationsObserver() {
                         if ($node.find(window.publications.config.publicationInputSelector).length > 0 || $node.is(window.publications.config.publicationInputSelector)) {
                             initNeeded = true;
                         }
-                        // Check for new author ORCID fields
-                        if ($node.find('input[data-cvoc-protocol^="orcid"][data-cvoc-parent="author"]').length > 0 || $node.is('input[data-cvoc-protocol^="orcid"][data-cvoc-parent="author"]')) {
+                        // Check for any new author subfields
+                        if ($node.find('[data-cvoc-parent="author"]').length > 0 || $node.is('[data-cvoc-parent="author"]')) {
                             refreshNeeded = true;
                         }
                     }
@@ -1121,8 +1128,8 @@ function setupPublicationsObserver() {
                 mutation.removedNodes.forEach(function(node) {
                     if (node.nodeType === 1) {
                         var $node = $(node);
-                        // Check if removed nodes contained author ORCID fields
-                        if ($node.find('input[data-cvoc-protocol^="orcid"][data-cvoc-parent="author"]').length > 0 || $node.is('input[data-cvoc-protocol^="orcid"][data-cvoc-parent="author"]')) {
+                        // Check if removed nodes contained author subfields
+                        if ($node.find('[data-cvoc-parent="author"]').length > 0 || $node.is('[data-cvoc-parent="author"]')) {
                             refreshNeeded = true;
                         }
                     }
@@ -1143,8 +1150,8 @@ function setupPublicationsObserver() {
         subtree: true
     });
 
-    // Delegate input and change events for all author ORCID fields (current and future)
-    $(document).on('input change', 'input[data-cvoc-protocol^="orcid"][data-cvoc-parent="author"]', function() {
+    // Delegate input and change events for all author subfields (current and future)
+    $(document).on('input change', 'input[data-cvoc-parent="author"], select[data-cvoc-parent="author"]', function() {
         refreshOrcidSupport();
     });
 }

@@ -637,18 +637,18 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
         } else if (Object.keys(managedFields).length === 0 || !managedFields.personName) {
             url = data.id;
         }
-        $(personOrgInput).val(url).trigger('change');
+        $(personOrgInput).val(url).attr('value', url);
 
         if (!hasPlainText) {
             if (isOrcid) {
-                $("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']").val(orcidBaseUrl + data.id).attr('value', orcidBaseUrl + data.id);
+                $(parent).find("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']").val(orcidBaseUrl + data.id).attr('value', orcidBaseUrl + data.id);
                 storeValue(orcidPrefix, data.id, data.text.split(";")[0]);
             } else if (isRor) {
-                $("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']").val(rorBaseUrl + data.id).attr('value', rorBaseUrl + data.id);
+                $(parent).find("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']").val(rorBaseUrl + data.id).attr('value', rorBaseUrl + data.id);
                 storeValue(rorPrefix, data.id, data.text.split(' | ')[0]);
             }
         } else {
-            $("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']").val(url).attr('value', url);
+            $(parent).find("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']").val(url).attr('value', url);
         }
 
         if (Object.keys(managedFields).length > 0) {
@@ -702,6 +702,7 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
 
             updateManagedFieldVisibility(personOrgInput, managedFields, !hasPlainText);
         }
+        $(personOrgInput).trigger('change');
     }).on('select2:unselect.personOrg select2:clear.personOrg', function (e) {
         var $this = $(this);
         // Capture for revert before clearing if not already captured
@@ -712,7 +713,7 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
             }
         }
         $this.parent().find(".mismatch-warning").remove();
-        $(personOrgInput).val("").trigger('change');
+        $(personOrgInput).val("").attr('value', '');
 
         // Ensure a radio button is selected if in orcid-or-ror mode
         var $radios = $this.parent().find('input[type="radio"]');
@@ -743,6 +744,7 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
         } else {
             matchManagedFieldHeights(personOrgInput);
         }
+        $(personOrgInput).trigger('change');
     });
 
     $select2.on('select2:open.personOrg', function (e) {
