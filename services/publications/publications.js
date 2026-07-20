@@ -227,32 +227,34 @@ function expandPublications() {
 
             var displayElement = $('<div/>');
 
-            if (relationType && relationType !== window.publications.state.i18n.relationNotSpecified) {
-                function clearTextNodesUntilBr(startNode, direction) {
-                    var node = startNode;
-                    while (node) {
-                        if (node.nodeType === 1 && node.tagName === 'BR') {
-                            break;
-                        }
+            if (relationType) {
+                if (relationType !== window.publications.state.i18n.relationNotSpecified) {
+                    function clearTextNodesUntilBr(startNode, direction) {
+                        var node = startNode;
+                        while (node) {
+                            if (node.nodeType === 1 && node.tagName === 'BR') {
+                                break;
+                            }
 
-                        if (node.nodeType === 3 && node.textContent.trim() !== '') {
-                            var hiddenSpan = document.createElement('span');
-                            hiddenSpan.style.display = 'none';
-                            hiddenSpan.textContent = node.textContent;
-                            node.parentNode.replaceChild(hiddenSpan, node);
-                        }
+                            if (node.nodeType === 3 && node.textContent.trim() !== '') {
+                                var hiddenSpan = document.createElement('span');
+                                hiddenSpan.style.display = 'none';
+                                hiddenSpan.textContent = node.textContent;
+                                node.parentNode.replaceChild(hiddenSpan, node);
+                            }
 
-                        node = direction === 'previous' ? node.previousSibling : node.nextSibling;
+                            node = direction === 'previous' ? node.previousSibling : node.nextSibling;
+                        }
                     }
-                }
 
-                var startNodeForClearing = (relationTypeElement.length > 0) ? relationTypeElement[0].previousSibling :
-                                          (citationElement.length > 0) ? citationElement[0].previousSibling :
-                                          (identifierTypeElement.length > 0) ? identifierTypeElement[0].previousSibling :
-                                          publicationIdentifierElement.previousSibling;
-                
-                if (startNodeForClearing) {
-                    clearTextNodesUntilBr(startNodeForClearing, 'previous');
+                    var startNodeForClearing = (relationTypeElement.length > 0) ? relationTypeElement[0].previousSibling :
+                                              (citationElement.length > 0) ? citationElement[0].previousSibling :
+                                              (identifierTypeElement.length > 0) ? identifierTypeElement[0].previousSibling :
+                                              publicationIdentifierElement.previousSibling;
+                    
+                    if (startNodeForClearing) {
+                        clearTextNodesUntilBr(startNodeForClearing, 'previous');
+                    }
                 }
                 displayElement.append(
                     $('<div/>').css({
@@ -315,15 +317,18 @@ function formatFirstPublicationRow() {
     var cleanHtml = rawHtml.replace(/<span>\s*<a\b[^>]*>.*?<\/a>\s*<\/span>/ig, '')
                               .replace(/<a\b[^>]*>.*?<\/a>/ig, '');
 
-    var relationType = '';
-    var allowedRelations = ['iscitedby', 'cites', 'issupplementto', 'issupplementedby', 'isreferencedby', 'references'];
-    var relationMatch = cleanHtml.match(/^\s*([^:]+):\s*(.*)$/);
+    var relationTypeElement = $('[data-cvoc-metadata-name="publicationRelationType"][data-cvoc-index="0"]');
+    var relationType = getElementValue(relationTypeElement);
+    if (!relationType) {
+        relationType = window.publications.state.i18n.relationNotSpecified;
+    }
+
     var citationHtml = cleanHtml;
-    if (relationMatch) {
-        var potentialRelation = relationMatch[1].trim();
-        if (allowedRelations.indexOf(potentialRelation.toLowerCase()) !== -1) {
-            relationType = potentialRelation;
-            citationHtml = relationMatch[2].trim();
+    if (relationType && relationType !== window.publications.state.i18n.relationNotSpecified) {
+        var escapedRelation = relationType.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        var relationMatch = cleanHtml.match(new RegExp('^\\s*' + escapedRelation + '\\s*:\\s*(.*)$', 'i'));
+        if (relationMatch) {
+            citationHtml = relationMatch[1].trim();
         }
     }
 
