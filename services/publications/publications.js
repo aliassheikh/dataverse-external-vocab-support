@@ -171,9 +171,11 @@ function getElementValue(element) {
 function expandPublications() {
     $(window.publications.config.publicationSelector).each(function() {
         var publicationIdentifierElement = this;
-        if (!$(publicationIdentifierElement).hasClass('expanded')) {
-            $(publicationIdentifierElement).addClass('expanded');
+        var $el = $(publicationIdentifierElement);
+        if (!$el.hasClass('expanded')) {
+            $el.addClass('expanded');
 
+            //publicationIDNumber is the text content of the publicationIdentifierElement
             var identifier = (publicationIdentifierElement.textContent || '').trim();
             var cvocIndex = $(publicationIdentifierElement).attr('data-cvoc-index');
 
@@ -183,6 +185,31 @@ function expandPublications() {
             var urlElement = $('[data-cvoc-metadata-name="publicationURL"][data-cvoc-index="' + cvocIndex + '"]');
 
             var relationType = getElementValue(relationTypeElement);
+            var allowedRelations = ['iscitedby', 'cites', 'issupplementto', 'issupplementedby', 'isreferencedby', 'references'];
+
+            if (!relationType) {
+                // Try to find it in the text nodes before the first span of this entry
+                var startNode = (relationTypeElement.length > 0) ? relationTypeElement[0] :
+                                (citationElement.length > 0) ? citationElement[0] :
+                                (identifierTypeElement.length > 0) ? identifierTypeElement[0] :
+                                publicationIdentifierElement;
+                
+                var prevNode = startNode.previousSibling;
+                var prefixText = '';
+                while (prevNode) {
+                    if (prevNode.nodeType === 1 && prevNode.tagName === 'BR') break;
+                    if (prevNode.nodeType === 3) prefixText = prevNode.textContent + prefixText;
+                    prevNode = prevNode.previousSibling;
+                }
+                var relationMatch = prefixText.match(/^\s*([^:]+):\s*$/);
+                if (relationMatch) {
+                    var potentialRelation = relationMatch[1].trim();
+                    if (allowedRelations.indexOf(potentialRelation.toLowerCase()) !== -1) {
+                        relationType = potentialRelation;
+                    }
+                }
+            }
+
             if(!relationType) {
                 relationType = window.publications.state.i18n.relationNotSpecified;
             }
@@ -190,14 +217,7 @@ function expandPublications() {
             var identifierType = getElementValue(identifierTypeElement);
             var urlValue = getElementValue(urlElement);
             var pidUrl = getPidUrl(identifierType, identifier, '');
-            var pidText = '';
-            if (identifierType && identifier) {
-                if (identifierType.toLowerCase() === 'doi' && !identifier.toLowerCase().startsWith('doi:')) {
-                    pidText = 'doi:' + identifier;
-                } else {
-                    pidText = identifier;
-                }
-            }
+            var pidText = (identifierType && identifier) ? '[PID]' : '';
 
             if (!citationText) {
                 citationText = identifier;
@@ -207,7 +227,7 @@ function expandPublications() {
 
             var displayElement = $('<div/>');
 
-            if (relationType) {
+            if (relationType && relationType !== window.publications.state.i18n.relationNotSpecified) {
                 function clearTextNodesUntilBr(startNode, direction) {
                     var node = startNode;
                     while (node) {
@@ -226,10 +246,14 @@ function expandPublications() {
                     }
                 }
 
-                if (relationTypeElement.length > 0) {
-                clearTextNodesUntilBr(relationTypeElement[0].previousSibling, 'previous');
-                 // clearTextNodesUntilBr(relationTypeElement[0].nextSibling, 'next');
-            }
+                var startNodeForClearing = (relationTypeElement.length > 0) ? relationTypeElement[0].previousSibling :
+                                          (citationElement.length > 0) ? citationElement[0].previousSibling :
+                                          (identifierTypeElement.length > 0) ? identifierTypeElement[0].previousSibling :
+                                          publicationIdentifierElement.previousSibling;
+                
+                if (startNodeForClearing) {
+                    clearTextNodesUntilBr(startNodeForClearing, 'previous');
+                }
                 displayElement.append(
                     $('<div/>').css({
                         'font-style': 'italic',
@@ -281,18 +305,16 @@ function formatFirstPublicationRow() {
 
         if (isPidUrl && !pidUrl) {
             pidUrl = href.replace(/[.,;]+$/, '');
-            pidText = $(this).text().trim();
+            pidText = '[PID]';
         } else if (!isPidUrl && !otherUrl) {
             otherUrl = href.replace(/[.,;]+$/, '');
         }
     });
 
-    // We remove the identifier span from the citation HTML to separate the citation text 
-    // from the identifier. This allows us to format the PID link separately and ensures 
-    // that any colons in the identifier are not misidentified as relationship separators.
-    var cleanHtml = rawHtml.replace(/<span>\s*<a\b[^>]*>.*?<\/a>\s*<\/span>/ig, '');
+    // Remove links from the citation HTML to separate citation text from identifiers
+    var cleanHtml = rawHtml.replace(/<span>\s*<a\b[^>]*>.*?<\/a>\s*<\/span>/ig, '')
+                              .replace(/<a\b[^>]*>.*?<\/a>/ig, '');
 
-    // Capture relation type from the cleaned HTML
     var relationType = '';
     var allowedRelations = ['iscitedby', 'cites', 'issupplementto', 'issupplementedby', 'isreferencedby', 'references'];
     var relationMatch = cleanHtml.match(/^\s*([^:]+):\s*(.*)$/);
@@ -305,31 +327,30 @@ function formatFirstPublicationRow() {
         }
     }
 
-    // Get the plain text citation from the cleaned (and potentially split) HTML
     var citationText = $('<div/>').html(citationHtml).text()
         .replace(/\s{2,}/g, ' ')
         .trim();
 
-    var displayElement = $('<div/>');
-    var citationBlock = buildPublicationCitationBlock(citationText, pidUrl, otherUrl, pidText);
+    if (citationText || pidUrl || otherUrl) {
+        var displayElement = $('<div/>');
+        
+        var citationBlock = buildPublicationCitationBlock(citationText, pidUrl, otherUrl, pidText);
 
-    if (relationType) {
-        displayElement.append(
-            $('<div/>').css({
-                'font-style': 'italic',
-                'margin-bottom': '0.5em'
-            }).text(relationType)
-        );
-        // Indent the citation if there's a relationship label above it
-        displayElement.append(
-            $('<div/>').css('margin-left', '2em').append(citationBlock)
-        );
-    } else {
-        // No relationship specified, just show the citation block
-        displayElement.append(citationBlock);
+        if (relationType) {
+            displayElement.append(
+                $('<div/>').css({
+                    'font-style': 'italic',
+                    'margin-bottom': '0.5em'
+                }).text(relationType)
+            );
+            displayElement.append(
+                $('<div/>').css('margin-left', '2em').append(citationBlock)
+            );
+        } else {
+            displayElement.append(citationBlock);
+        }
+        cell.empty().append(displayElement);
     }
-
-    cell.empty().append(displayElement);
 }
 
 function buildPublicationCitationBlock(citationText, pidUrl, urlValue, pidText) {
