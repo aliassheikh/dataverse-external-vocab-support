@@ -497,9 +497,7 @@ function updatePersonOrOrgInputs() {
                     'Accept': 'application/json'
                 },
                 success: function (ror) {
-                    const displayName = ror.names.find(n =>
-                        n.types && (n.types.includes("ror_display") || n.types.includes("label"))
-                    )?.value || ror.id;
+                    const displayName = getRorDisplayName(ror);
 
                     const acronyms = ror.names
                         .filter(n => n.types && n.types.includes("acronym"))
@@ -933,6 +931,26 @@ function checkOrcidWorkMatch(orcidId, orcidBaseUrl) {
     );
 }
 
+function getRorDisplayName(org) {
+    // ROR uses two-letter ISO 639-1 codes and we allow, for example, fr-CA
+    const lang = (window.personOrg.state.loadedLang || 'en').split('-')[0];
+    const names = org.names || [];
+
+    // 1. Label in current language
+    const langLabel = names.find(n => n.types && n.types.includes("label") && n.lang === lang);
+    if (langLabel) return langLabel.value;
+
+    // 2. ror_display (any language, usually English)
+    const rorDisplay = names.find(n => n.types && n.types.includes("ror_display"));
+    if (rorDisplay) return rorDisplay.value;
+
+    // 3. Fallback to any label if neither of the above are found
+    const anyLabel = names.find(n => n.types && n.types.includes("label"));
+    if (anyLabel) return anyLabel.value;
+
+    return org.id;
+}
+
 function expandOrganization(element, id, rorBaseUrl, managedFields) {
     var rorRetrievalUrl = (rorBaseUrl.startsWith("https://sandbox.ror.org") ? "https://api.sandbox.ror.org/organizations/" : "https://api.ror.org/organizations/") + id;
     $.ajax({
@@ -942,10 +960,8 @@ function expandOrganization(element, id, rorBaseUrl, managedFields) {
         headers: {'Accept': 'application/json'},
         success: function (org) {
             // If found, construct the HTML for display
-            // Find the display name (type: "ror_display" or "label")
-            const displayName = org.names.find(n =>
-                n.types && (n.types.includes("ror_display") || n.types.includes("label"))
-            )?.value || org.id;
+            // Find the display name
+            const displayName = getRorDisplayName(org);
 
             // Find all acronyms
             const acronyms = org.names
@@ -1209,9 +1225,7 @@ function getOrgSelect2Config(inputElement, searchUrl) {
                     results: (data['items'] || [])
                         .sort((a, b) => Number(b.status === 'active') - Number(a.status === 'active'))
                         .map(org => {
-                            const displayName = org.names.find(n =>
-                                n.types && (n.types.includes("ror_display") || n.types.includes("label"))
-                            )?.value || org.id;
+                            const displayName = getRorDisplayName(org);
 
                             const acronyms = org.names
                                 .filter(n => n.types && n.types.includes("acronym"))
