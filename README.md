@@ -32,77 +32,90 @@ Display can also be graphical, as in displaying [Local Contexts](https://localco
 
 ## Repository Contents
 
-This repository contains scripts and example materials that demonstrate how to configure Dataverse to leverage them. They are a mixture of initial proofs-of-concept, demonstrations of alternative approaches, and some that are potentially mature enough for production use (although the latter often require later versions of Dataverse which have extensions/bug fixes for the underlying mechanism. Documentation in the /examples subdirectory provides additional details for specific scripts and configuration for specific fields.
+This repository is organized into **services**, where each service (e.g., `person-or-org`, `publications`, `geonames`) contains its own scripts, configurations, and documentation.
 
-It also contains a [JSON Schema that can be used to validate configuration files](https://github.com/gdcc/dataverse-external-vocab-support/blob/main/examples/config/CVocConf.schema.json).
+- `services/`: Contains the logic and configuration for each vocabulary/PID service, along with service-specific examples and documentation.
+- `dist/`: A centralized directory for web server access, containing symlinks to all production-ready scripts, internationalization files, and images.
+- `scripts/`: Deployment and configuration management tools.
+
+It also contains a [JSON Schema that can be used to validate configuration files](services/person-or-org/configs/CVocConf.schema.json).
 
 ## Scripts in Production
 
-The following scripts/config files are being used in production (or testing) at one or more Dataverse Sites
+The following services are being used in production (or testing) at one or more Dataverse sites:
 
-* **ORCID and ROR for Dataset authors** - see [https://github.com/gdcc/dataverse-external-vocab-support/examples/authorIDandAffilationUsingORCIDandROR.md](https://github.com/gdcc/dataverse-external-vocab-support/blob/main/examples/authorIDandAffilationUsingORCIDandROR.md)
-
-* **OntoPortal for Dataset keywords** - see [examples/keywordsUsingOntoPortal.md](examples/keywordsUsingOntoPortal.md)
-
-* **Integration with [https://localcontexts.org](https://localcontexts.org)** (on [https://demo.dataverse.org](https://demo.dataverse.org) using the LocalContexts Sandbox) - see [https://github.com/gdcc/dataverse-external-vocab-support/tree/main/packages/local_contexts](https://github.com/gdcc/dataverse-external-vocab-support/tree/main/packages/local_contexts)
-
-New and (almost) in production is
-
-* **Geonames for names of geographical locations** - see [examples/geonames.md](examples/geonames.md)
-
+* **ORCID and ROR for Person/Organization** - see [services/person-or-org/README.md](services/person-or-org/README.md)
+* **OntoPortal for Dataset keywords** - see [services/ontoportal/](services/ontoportal/)
+* **Integration with [Local Contexts](https://localcontexts.org)** - see [services/local-contexts/README.md](services/local-contexts/README.md)
+* **Geonames for geographical locations** - see [services/geonames/](services/geonames/)
 
 ## Deployment
 
-In general there are four steps to add interaction with a vocabulary or PID service to Dataverse:
+We provide an interactive deployment script to simplify the process of configuring and installing CVOC scripts.
 
-* Identify the metadata field to be enhanced. This can be a field in an existing block, or one in a custom block that you install (there are some custom blocks in this repo for various scripts). As with any custom block, you must [install it in Dataverse](https://guides.dataverse.org/en/latest/admin/metadatacustomization.html#metadata-block-setup), enable the use of this new block in your Dataverse collection (e.g. Use the Edit/General Information menu item, /Metadata Fields section to add the block/specific fields.) and add any desired terms from the example block to the Browse/Search Facets list (same Edit/General Information menu item)
-* Create a configuration file and [submit it as the :CVocConf setting value](https://guides.dataverse.org/en/latest/installation/config.html#cvocconf) for your Dataverse. It is probably easiest to modify the example scripts here. Nominally you would only need to change the metadata field the script will enhance and the URL for the location of the script. You should validate your file against the provided [JSON Schema](https://guides.dataverse.org/en/latest/installation/config.html#cvocconf) to avoid errors that can break the Dataverse page display.
-* Deploy the script(s) to a local location that matches the URL you chose in the config file. It is possible to access the scripts from the github.io URLs used in the example config files here, but this is not recommended as we are not yet versioning the scripts and assuring that the version in the repository will not change.
-* (Update the Dataverse Solr schema)[https://guides.dataverse.org/en/latest/admin/metadatacustomization.html#updating-the-solr-schema]. This step is not always needed but is required if the scripts you use write multiple values for a metadatafield that is normally single-valued (e.g. the script writes the id and name of an entity, or multiple translations of a term to a field.).
+### 1. Populate the Distribution Directory
+Populate the `dist/` directory with symlinks to the service files (scripts, images, i18n).
 
-To deploy scripts to multiple fields, you need to add one section (JSON Object) per field/script combo to the array in your config file.
-
-This can be done simply by using one of the scripts below to concatenate the JSON configurations for individual/sets of fields.
-
-### Combining Configuration Files
-
-When deploying scripts to multiple fields, you can use one of the provided utility scripts to combine individual JSON configuration files into a single `CVocConf.json` file. Three versions are available:
-
-**Bash Script (Linux/macOS/WSL):**
-Make sure to make the script executable:
+**Using Node.js:**
 ```bash
-chmod +x compose-cvoc-conf.sh
-```
-Then run it:
-```bash
-cd examples/config
-./compose-cvoc-conf.sh authorsOrcidAndRor depositorOrcid demo/keywordsExample
+node scripts/deploy.js link
 ```
 
-**Python Script:**
+**Using Python:**
 ```bash
-cd examples/config
-python3 compose_cvoc_config.py authorsOrcidAndRor depositorOrcid demo/keywordsExample
+python scripts/deploy.py link
 ```
 
-**Node.js Script:**
+### 2. Compose and Customize Configuration
+Use the interactive tool to select the services you want to deploy, combine their configurations, and optionally rewrite `js-url` to point to your local web server.
+
+**Using Node.js:**
 ```bash
-cd examples/config
-node compose-cvoc-conf.js authorsOrcidAndRor depositorOrcid demo/keywordsExample
+node scripts/deploy.js compose
 ```
 
-All three scripts:
-* Accept multiple configuration file names as arguments (with or without .json extension)
-* Support relative paths (e.g., demos/authors configs/depositorOrcid)
-* Combine all objects from the input files into a single CVocConf.json array that can be used as the [:CVocConf setting](https://guides.dataverse.org/en/latest/installation/config.html#cvocconf) in Dataverse
-* Validate the output to ensure it's valid JSON
-* Report the total number of objects included
+**Using Python:**
+```bash
+python scripts/deploy.py compose
+```
+
+### 3. Link to Web Server
+Link the `dist/` directory to your web server (e.g., `/var/www/html/cvoc`). The deployment script can help you identify the correct path based on your configuration.
+
+**Using Node.js:**
+```bash
+node scripts/deploy.js linkWeb
+```
+
+**Using Python:**
+```bash
+python scripts/deploy.py linkWeb
+```
+
+### 4. Update Dataverse Settings
+Upload the generated `CVocConf.json` directly to your Dataverse instance.
+
+**Using Node.js:**
+```bash
+node scripts/deploy.js updateDataverse
+```
+
+**Using Python:**
+```bash
+python scripts/deploy.py updateDataverse
+```
+
+The script will prompt for your Dataverse URL and an optional unblock key if your API is restricted. Upon success, your new configuration will be active.
+
+Note: Individual scripts may also require specific metadata blocks or other configuration. Please review the instructions for each service you use.
+
+---
 
 ## How It All Works
 
 The basic idea of the Dataverse External Vocabulary mechanism is to simplify adding and displaying controlled terms and PIDs as metadata. As far as Dataverse is concerned, all that is happening is that a term or PID URI is being entered into a text field and Dataverse then stores and displays the term/PID URI. The interesting part is that a JavaScript is taking over Dataverse's text input and text display to instead provide support such as a type-ahead lookup from a vocabulary/PID service and, on the diplay side, displaying the human-readable name of associated with the term/PID, and potentially additional metadata about the term/PID, rather than the raw URI.
 
-The scripts know which fields to manage based on some invisible data-cvoc-* attributes Dataverse adds to the page's HTML. Dataverse has a flexible configuration mechanism to allow admins to specify which fields should be associated with which scripts, but, in other repositories, these associations could be static. For example, [this simple static example page](examples/staticOrcidAndRorExample.html) shows the ORCID and ROR scripts associated with two input and two display fields. You can look at the page source to see the additional attributes in the HTML that make this work.
+The scripts know which fields to manage based on some invisible data-cvoc-* attributes Dataverse adds to the page's HTML. Dataverse has a flexible configuration mechanism to allow admins to specify which fields should be associated with which scripts, but, in other repositories, these associations could be static. For example, [this simple static example page](services/person-or-org/examples/staticOrcidAndRorExample.html) shows the ORCID and ROR scripts associated with two input and two display fields. You can look at the page source to see the additional attributes in the HTML that make this work.
 
 There's more of course. When a repository already has separate subfields for names and identifiers, scripts can be written to fill in both. If the underlying vocabulary/PID service supports multiple vocabularies, or has an advanced search mechanism, the scipts can be written to let you select which vocabulary to use or provide an advanced search interface. If there's a field where you want to be able to handle free text as well as controlled terms/PIDs, scripts can support that as well. Dataverse also includes a mechanism to allow metadata about the terms/PIDs to be captured, making it possible to provide internationalization for search (i.e. allowing search in your language for a term), include organization acronyms in exported metadata formats, etc. Fortunately, most of this complexity is handled by script/config example developers and Dataverse admins just need to select which ones to install.
 
@@ -110,9 +123,3 @@ For further details, see [James D. Myers, & Vyacheslav Tykhonov. (2023). A Plug-
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8133723.svg)](https://doi.org/10.5281/zenodo.8133723)
 
 
-### Packages
-
-The directory `packages` include complete working sets of metadatablock.tsv / cvoc config and / js files.
-
-- local_contexts
-Is pulling and displaying project-data from https://localcontextshub.org/
