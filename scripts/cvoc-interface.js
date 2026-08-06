@@ -1,3 +1,15 @@
+/***********************************************************************************
+ * WARNING: These are legacy copies of scripts now hosted under the /services folder.
+ *
+ * THEY WILL NOT BE MAINTAINED AND MAY DISAPPEAR WITHOUT NOTICE.
+ *
+ * You are advised to not use them or configure to use any scripts hosted at gdcc.github.io/dataverse-external-vocab-support
+ * except for testing.
+ *
+ * The current scripts, which are being maintained and updated, are under the /services directory.
+ * To use them, follow the new local download/install instructions in the repository readme.
+ */
+
 // depends on jQuery ajax
 $(document).ready(function() {
   updateSkosmosInputs();

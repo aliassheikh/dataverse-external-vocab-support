@@ -1,3 +1,15 @@
+/***********************************************************************************
+ * WARNING: These are legacy copies of scripts now hosted under the /services folder.
+ *
+ * THEY WILL NOT BE MAINTAINED AND MAY DISAPPEAR WITHOUT NOTICE.
+ *
+ * You are advised to not use them or configure to use any scripts hosted at gdcc.github.io/dataverse-external-vocab-support
+ * except for testing.
+ *
+ * The current scripts, which are being maintained and updated, are under the /services directory.
+ * To use them, follow the new local download/install instructions in the repository readme.
+ */
+
 var personOrgSelector = "span[data-cvoc-protocol='orcid-or-ror'], span[data-cvoc-protocol='orcid'], span[data-cvoc-protocol='ror']";
 var personOrgInputSelector = "input[data-cvoc-protocol='orcid-or-ror'], input[data-cvoc-protocol='orcid'], input[data-cvoc-protocol='ror']";
 var orcidPrefix = "orcid:";

@@ -1,3 +1,15 @@
+/***********************************************************************************
+ * WARNING: These are legacy copies of scripts now hosted under the /services folder.
+ *
+ * THEY WILL NOT BE MAINTAINED AND MAY DISAPPEAR WITHOUT NOTICE.
+ *
+ * You are advised to not use them or configure to use any scripts hosted at gdcc.github.io/dataverse-external-vocab-support
+ * except for testing.
+ *
+ * The current scripts, which are being maintained and updated, are under the /services directory.
+ * To use them, follow the new local download/install instructions in the repository readme.
+ */
+
 console.log("fundreg.js..");
 var fundregSelector = "span[data-cvoc-protocol='fundreg']";
 var fundregInputSelector = "input[data-cvoc-protocol='fundreg']";
