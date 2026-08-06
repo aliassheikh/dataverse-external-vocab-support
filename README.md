@@ -53,7 +53,8 @@ The following services are being used in production (or testing) at one or more 
 
 We provide an interactive deployment script to simplify the process of configuring and installing CVOC scripts.
 
-WARNING: Do not configure your production environment to use scripts from the https://gdcc.github.io/dataverse-exterrnal-vocab-support/ website! Instead, use the instructions here to download/install local copies.
+> [!WARNING]
+> WARNING: Do not configure your production environment to use scripts from the https://gdcc.github.io/dataverse-exterrnal-vocab-support/ website! Instead, use the instructions here to download/install local copies.
 
 ### 1. Populate the Distribution Directory
 Populate the `dist/` directory with symlinks to the service files (scripts, images, i18n).
