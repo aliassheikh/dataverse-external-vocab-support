@@ -51,13 +51,19 @@ The following services are being used in production (or testing) at one or more 
 
 ## Deployment
 
-We provide an interactive deployment script to simplify the process of configuring and installing CVOC scripts.
+We provide an interactive deployment script to simplify the process of configuring and installing CVOC scripts. The installation requires that you are running a web server where these files can be added.
 
 > [!WARNING]
 > WARNING: Do not configure your production environment to use scripts from the https://gdcc.github.io/dataverse-exterrnal-vocab-support/ website! Instead, use the instructions here to download/install local copies.
 
-### 1. Populate the Distribution Directory
-Populate the `dist/` directory with symlinks to the service files (scripts, images, i18n).
+### 0. Clone the repository/make a local copy
+
+```bash
+git clone https://github.com/gdcc/dataverse-external-vocab-support.git
+```
+
+### 1. Populate a Distribution Directory
+The individual scripts and their required resources are now managed in separate services subfolders in the repository. This step populates the `dist/` directory with symlinks to all of the files needed for deployment (scripts, images, i18n).
 
 **Using Node.js:**
 ```bash
@@ -71,6 +77,7 @@ python scripts/deploy.py link
 
 ### 2. Compose and Customize Configuration
 Use the interactive tool to select the services you want to deploy, combine their configurations, and optionally rewrite `js-url` to point to your local web server.
+This step creates a json file with the information Dataverse needs for the :CVocConf setting. (A later step will call Dataverse's settings API to add this file)
 
 **Using Node.js:**
 ```bash
@@ -84,6 +91,7 @@ python scripts/deploy.py compose
 
 ### 3. Link to Web Server
 Link the `dist/` directory to your web server (e.g., `/var/www/html/cvoc`). The deployment script can help you identify the correct path based on your configuration.
+This step should make all of the scripts and their resources available from your website.
 
 **Using Node.js:**
 ```bash
@@ -96,7 +104,7 @@ python scripts/deploy.py linkWeb
 ```
 
 ### 4. Update Dataverse Settings
-Upload the generated `CVocConf.json` directly to your Dataverse instance.
+Upload the generated `CVocConf.json` directly to your Dataverse instance. When this step is complete, the scripts should be running in your instance.
 
 **Using Node.js:**
 ```bash
